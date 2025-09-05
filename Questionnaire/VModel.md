@@ -1,6 +1,12 @@
 ## 7 V-Model
 
-The V-Model is a reference model for software development processes. It divides the whole software development process into a number of phases, which are organized in the shape of a V. It has been derived in the 80s from the "Waterfall Model"
+The V-Model is a reference model for software development processes developed in the 80s. It has been derived in the 80s from the "Waterfall Model" from a paper by Winston Royce "Managing the Development of Large Software Systems." 
+
+![Waterfall](Waterfall.png)  
+Source: https://pmworldlibrary.net/wp-content/uploads/2018/07/pmwj72-Jul2018-Morgan-applying-1970-waterfall-lessons-umd-paper.pdf
+
+
+The V Model divides the whole software development process into a number of phases, which are organized in the shape of a V.
 
 The phases on the left branch of the V are related to the design and implementation, whereas the phases on the right-hand side branch contain tasks related to testing and verification.
 
@@ -59,7 +65,7 @@ The execution of the user acceptance tests ensure that the system actually deliv
 Automotive SPICE (Software Process Improvement and Capability dEtermination), which is a framework for assessing
 the maturity and capabilities of processes within an organization, incorporates the V model in its Process Reference Model:
 
-![V Model](ASpiceVModel.jpg)
+![V Model](ASpiceVModel.jpg)  
 Source: https://www.plays-in-business.com/automotivespice/
 
 ## Properties of the V Model
