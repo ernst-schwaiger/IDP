@@ -4,7 +4,7 @@ In 1976, an accident happened in a chemical plant in Meda, in the vicinity of Se
 The plant was owned by a company called "Industrie Chimiche Meda Società Azionaria" or ICMESA,
 which was owned by Givaudan, which in turn was owned by Hoffmann-La Roche.
 
-![V Model](seveso_limpieza.jpg)
+![Seveso](seveso_limpieza.jpg)
 
 ### The Accident
 
