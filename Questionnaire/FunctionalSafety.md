@@ -22,6 +22,10 @@ Functional safety is, [...], “Protecting a user from technology”. It also pr
 
 Source: https://www.tuvsud.com/en-us/services/functional-safety/about
 
+"is part of the overall safety that depends on a system or equipment operating correctly in response to its inputs."
+-- IEC 61508
+
+
 ### Purpose
 
 The purpose of functional safety is to protect the user, directly, or indirectly (e.g. via environmental
