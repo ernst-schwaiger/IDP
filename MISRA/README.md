@@ -1,5 +1,11 @@
 # MISRA Rules Slide Deck
 
+## Example Program
+
+- sudo apt install make gcc cppcheck
+- compile the program with `make`
+- run cppcheck with `make check`
+
 ## Stefan
 
 ### Dir 4.11 
