@@ -75,10 +75,11 @@ Static analyser tools are capable of providing path analysis checks that can ide
 |  Required | Undecidable, System | C90, C99 |
 > Rationale: unreachable code cannot be executed and cannot have any effect on the programs outputs. The presence of unreachable code may therefore indicate an error in the programs logic.
 
-Unreachable code that is not removed by the compiler wastes resources, for example:
-• It occupies space in the target machine’s memory;
-• Its presence may cause a compiler to select longer, slower jump instructions when transferring control around the unreachable code;
-• Within a loop, it might prevent the entire loop from residing in an instruction cache.
+Unreachable code that is not removed by the compiler wastes resources, for example:   
+- It occupies space in the target machine’s memory;   
+- Its presence may cause a compiler to select longer, slower jump instructions when transferring control around the unreachable code;
+- Within a loop, it might prevent the entire loop from residing in an instruction cache.
+
 ## Lorenzo
 
 ### Rule 2.2
