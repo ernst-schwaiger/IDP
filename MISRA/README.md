@@ -9,68 +9,76 @@
 ## Stefan
 
 ### Dir 4.11 
-> The validity of values passed to library functions shall be checked
+> The validity of values passed to library functions shall be checked.
+
 | Category  | Analysis | Applies to |
 | -         | -        | -          |
 |  Required | - | C90, C99 |
 
-> Amplification: The nature and organization of the project will determine which libraries, and functions within those libraries, should be subject to this directive.
+> Amplification: The nature and organization of the project will determine which  libraries, and functions within those libraries, should be subject to this directive.
 
 > Rationale: Many functions of The Standard Library are not required by The Standard to check the validity of the parameters passed to them. Even if checks are required, there is no guarantee that adequate checking will take place.
 
- > Examples: many functions from <math.h> eg sqrt, log: no negative numbers are allowed to be passed
-> toupper, tolower: some implementations produce unexpected results when no lower or upper case is passed
-> abs: undifined behavior for negative integers passed
->
-> Guideline might be satisfied with:
-> Check the values before calling the function
-> Check the values in the called library function
-> Produce “wrapped” versions of functions that perform the checks then call the original function;
-> Demonstrate statically that the input parameters can never take invalid values.
+Examples: 
+- many functions from math.h: eg sqrt, log: no negative numbers are allowed to be passed
+- toupper, tolower: some implementations produce unexpected results when no lower or upper case is passed
+- abs: undifined behavior for negative integers passed
+
+Guideline might be satisfied with:
+- Check the values before calling the function
+- Check the values in the called library function
+- Produce “wrapped” versions of functions that perform the checks then call the original function;
+- Demonstrate statically that the input parameters can never take invalid values.
 
 ### Dir 4.12
-> Dynamic memory allocation shall not be used
+> Dynamic memory allocation shall not be used.
+
 | Category  | Analysis | Applies to |
 | -         | -        | -          |
 |  Required | - | C90, C99 |
 >Amplification:
 This rule applies to all dynamic memory allocation packages including:
 • Those provided by The Standard Library;
-• Third-party packages
+• Third-party packages  
+
 >Rationale: The Standard Library’s dynamic memory allocation and deallocation routines can lead to undefined behaviour
->If a decision is made to use dynamic memory, care shall be taken to ensure that the software behaves in a predictable manner. For example, there is a risk that:
->Insufficient memory may be available to satisfy a request
->There is a high variance in the execution time required to perform allocation or deallocation
->
+
+If a decision is made to use dynamic memory, care shall be taken to ensure that the software behaves in a predictable manner. For example, there is a risk that:
+- Insufficient memory may be available to satisfy a request
+- There is a high variance in the execution time required to perform allocation or deallocation
+
 
 ### Dir 4.13 
 > Functions which are designed to provide operations on a resource should be called in an appropriate sequence
+
 | Category  | Analysis | Applies to |
 | -         | -        | -          |
 |  Advisory | - | C90, C99 |
->Amplification:
->vAmplification
->A set of functions providing operations on a resource typically has three kinds of operation:
+>Amplification
+A set of functions providing operations on a resource typically has three kinds of operation:
 >1. Allocation of the resource, e.g. opening a file;
 >2. Deallocation of the resource, e.g. closing a file;
 >3. Other operations, e.g. reading from a file.
+
 >For each such set of functions, all uses of its operations should occur in an appropriate sequence.
+
+
 > Rationale:
 Static analyser tools are capable of providing path analysis checks that can identify paths through a program that result in the deallocation function of a sequence not being called. In order to maximize the benefits of such automated checks, developers are therefore encouraged to enable these checks by designing and declaring sets of balanced functions to the static analyser.
 
 
 ### Rule 2.1 
 >A project shall not contain unreachable code
->| Category  | Analysis | Applies to |
+
+| Category  | Analysis | Applies to |
 | -         | -        | -          |
 |  Required | Undecidable, System | C90, C99 |
-> Rationale: unreachable code cannot be executed and cannot have any effect on the program’s outputs. The presence of unreachable code may therefore indicate an error in the program’s logic.
->Unreachable code that is not removed by the compiler wastes resources, for example:
-• It occupies space in the target machine’s memory;
-• Its presence may cause a compiler to select longer, slower jump instructions when transferring
-control around the unreachable code;
-• Within a loop, it might prevent the entire loop from residing in an instruction cache.
+> Rationale: unreachable code cannot be executed and cannot have any effect on the programs outputs. The presence of unreachable code may therefore indicate an error in the programs logic.
 
+Unreachable code that is not removed by the compiler wastes resources, for example:
+• It occupies space in the target machine’s memory;
+• Its presence may cause a compiler to select longer, slower jump instructions when transferring control around the unreachable code;
+• Within a loop, it might prevent the entire loop from residing in an instruction cache.
 ## Lorenzo
 
 ### Rule 2.2
