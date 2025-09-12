@@ -178,7 +178,7 @@ Source: https://en.cppreference.com/w/c/program/exit
 
 `char *getenv( const char *name );` takes the name of an environment variable and returns a pointer to its value, or `null`. 
 
-The set of environmental variables and methods of altering it are implementation-defined.  
+The set of environmental variables and methods of altering it are implementation-defined. Modifying the string returned by `getenv()` invokes undefined behavior.
 Source: https://en.cppreference.com/w/c/program/getenv
 
 The return value of `int system( const char *command );` is implementation defined.  
@@ -200,7 +200,7 @@ void* bsearch( const void *key, const void *ptr, size_t count, size_t size, int 
 ```
 Both functions are passed a comparison function `comp` as parameter. That function shall return a value `< 0` if the first value is less than the second one, a value of `0` if both elements are equal, or a value `> 0` if the first element is greater than the second one.
 
-If two elements exist in the array passed to qsort are equal, their relative order is implementation defined. If `key` exists more than once in the array passed to `bsearch` it is implementation dependent, which of the elements with the proper key is actually returned.
+If two elements exist in the array passed to qsort are equal, their relative order is implementation defined. If `key` exists more than once in the array passed to `bsearch` it is implementation dependent, which of the elements with the proper key is actually returned. The behavior is undefined if the array is not already partitioned with respect to *key in ascending order according to the same criterion that comp uses.
 
 Moreover, `qsort` might be implemented as a recursive function, hence it must not be used in environments that forbid recursive functions in general.
 
