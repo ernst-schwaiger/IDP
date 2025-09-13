@@ -13,9 +13,9 @@ int main(int argc, char **argv)
     int s, status;
     char dest[18] = "DC:A6:32:BB:79:EF";
 
-    if(argc < 2)
+    if(argc != 3)
     {
-        fprintf(stderr, "usage: %s <bt_addr>\n", argv[0]);
+        fprintf(stderr, "usage: %s <bt_mac_addr> <msg>\n", argv[0]);
         exit(2);
     }
 
@@ -35,8 +35,7 @@ int main(int argc, char **argv)
     // send a message
     if( status == 0 )
     {
-        char *message = "hallihallo!";
-        status = write(s, message, strlen(message));
+        status = write(s, argv[2], strlen(argv[2]));
     }
 
     if( status < 0 )
