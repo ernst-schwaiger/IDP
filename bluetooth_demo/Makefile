@@ -1,5 +1,5 @@
 CC = gcc
-CCOPTS = -c -ggdb3 -O0
+CCOPTS = -ggdb3 -O0
 LIBS = -lbluetooth
 
 all: client server
