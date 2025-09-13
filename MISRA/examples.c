@@ -1,5 +1,5 @@
 #include <stdio.h>
-
+#include <time.h> /* this should alarm the checker */
 /* Types */
 
 typedef struct node_tag
@@ -19,14 +19,23 @@ my_enum_type my_enum_value = bar;
 typedef union { int variant_int; float variant_float; } my_union_type;
 my_union_type my_union_value = { 42 };
 
+struct 
+{
+    int x;
+    int y;
+} myStruct;
+
+
 
 /* Function forward declarations */
 
 void test_linked_list( void );
+time_t test_time( void );
 
 int main(int argc, char *argv[])
 {
     test_linked_list();
+    time_t foo = test_time();
 }
 
 
@@ -43,5 +52,13 @@ void test_linked_list( void )
         (void)printf("Node value: %d\n", curr_node->value);
         curr_node = curr_node->next;
     }
+}
+
+time_t test_time( void )
+{
+    /* this should alarm the checker */
+    time_t currentTime;
+    time( &currentTime );
+    return currentTime;
 }
 
