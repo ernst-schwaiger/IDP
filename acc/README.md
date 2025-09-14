@@ -34,3 +34,12 @@ Either `ctest --output-on-failure` or run a test binary, e.g. `./libraries/bluet
 make coverage
 ```
 generates a `Peer/debug/coverage.html` indicating covered/not covered parts of the code.
+
+## TODOs
+
+- Add proper bluetooth API to common library
+- detailed concept for acc
+- check: is encryption needed for bluetooth comm, or is MAC with counter sufficient?
+- integrate crypto library
+- fix coverage
+- implement async send/receive in BT sockets.

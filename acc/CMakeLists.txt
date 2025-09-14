@@ -13,6 +13,13 @@ FetchContent_Declare(
   GIT_TAG        v3.10.0 # or a later release
 )
 
+find_library(LibBlueZ NAMES libbluetooth.a)
+find_library(LibBlueZ NAMES bluetooth.lib)
+
+if(MYLIB_LIBRARY)
+    target_link_libraries(MyApp PRIVATE ${MYLIB_LIBRARY})
+endif()
+
 FetchContent_MakeAvailable(Catch2)
 
 # Commonly used C++ standard settings
