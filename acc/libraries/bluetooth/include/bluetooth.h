@@ -15,15 +15,15 @@ namespace acc
 class BTConnection
 {
 public:
-    BTConnection(char const *remoteMAC, uint16_t port, bool listen) : 
+    BTConnection(char const *remoteMAC, bool listenMode) : 
         m_listenSocket { -1 },
         m_socket { -1 },
-        m_local_addr{ AF_BLUETOOTH, htobs(port), { 0 }, 0, 0 },
-        m_remote_addr{ AF_BLUETOOTH, htobs(port), { 0 }, 0, 0 }
+        m_local_addr{ AF_BLUETOOTH, htobs(0x1001), { 0 }, 0, 0 },
+        m_remote_addr{ AF_BLUETOOTH, 0, { 0 }, 0, 0 }
     {
         str2ba( remoteMAC, &m_local_addr.l2_bdaddr );
 
-        if (listen)
+        if (listenMode)
         {
             int m_listenSocket = socket(AF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_L2CAP);
 
@@ -31,7 +31,16 @@ public:
             {
                 throw std::runtime_error("failed to open bluetooth listen socket");
             }
-            ::bind(m_listenSocket, reinterpret_cast<struct sockaddr *>(&m_local_addr), sizeof(m_local_addr));
+            if (::bind(m_listenSocket, reinterpret_cast<struct sockaddr *>(&m_local_addr), sizeof(m_local_addr)) < 0)
+            {
+                throw std::runtime_error("failed to bind to listen socket");
+            }
+
+            if (::listen(m_listenSocket, 1) < 0)
+            {
+                throw std::runtime_error("failed to listen on listen socket");
+            }
+
             socklen_t socklen = sizeof(m_remote_addr);
             m_socket = ::accept(m_listenSocket, reinterpret_cast<struct sockaddr *>(&m_remote_addr), &socklen);
 

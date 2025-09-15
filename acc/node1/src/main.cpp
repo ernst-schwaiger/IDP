@@ -2,6 +2,7 @@
 #include <array>
 #include <bluetooth.h>
 #include <span>
+#include <stdexcept>
 
 using namespace std;
 
@@ -12,20 +13,31 @@ array<uint8_t, 4096> rxBuf;
 
 int main()
 {
-    cout << "Hello, I am node1.\n";
-
-    acc::BTConnection conn(MAC_RASPI_5, 4242, true); 
-
-    while(1)
+    try
     {
-        if (conn.receive(rxBuf) < 0)
+        cout << "Hello, I am node1.\n";
+
+        acc::BTConnection conn(MAC_RASPI_5, true); 
+
+        while(1)
         {
-            cerr << "Failed to read data from buffer.";
+            if (conn.receive(rxBuf) < 0)
+            {
+                cerr << "Failed to read data from buffer.";
+            }
+            else
+            {
+                cout << &rxBuf[0] << "\n";
+            }
         }
-        else
-        {
-            cout << &rxBuf[0] << "\n";
-        }
+    }
+    catch(const runtime_error &e)
+    {
+        cerr << e.what() << '\n';
+    }
+    catch(...)
+    {
+        cerr << "Unknown exception occurred.\n";
     }
 
     return 0;

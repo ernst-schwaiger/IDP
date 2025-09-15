@@ -11,7 +11,7 @@ static char const * MSG = "Hello, I am node2.";
 int main()
 {
     cout << "Hello, I am node2.\n";
-    acc::BTConnection conn(MAC_RASPI_4, 4242, false); 
+    acc::BTConnection conn(MAC_RASPI_4, false); 
 
     while(1)
     {
