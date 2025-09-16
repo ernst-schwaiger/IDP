@@ -12,73 +12,45 @@
 
 namespace acc
 {
+
+class BTListenSocket
+{
+public:
+    BTListenSocket();
+    ~BTListenSocket();
+
+    int getListenSocket() const
+    {
+        return m_listenSocket;
+    }
+
+private:
+    int m_listenSocket;
+    struct sockaddr_l2 m_local_addr;
+};
+
 class BTConnection
 {
 public:
-    BTConnection(char const *remoteMAC, bool listenMode) : 
-        m_listenSocket { -1 },
-        m_socket { -1 },
-        m_local_addr{ AF_BLUETOOTH, htobs(0x1001), { 0 }, 0, 0 },
-        m_remote_addr{ AF_BLUETOOTH, htobs(0x1001), { 0 }, 0, 0 }
-    {
-        if (listenMode)
-        {
-            int m_listenSocket = socket(AF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_L2CAP);
+    // Server Constructor
+    BTConnection(BTListenSocket *pListenSocket);
+    // Client constructor
+    BTConnection(char const *remoteMAC);
+    ~BTConnection();
 
-            if (m_listenSocket < 0)
-            {
-                throw std::runtime_error("failed to open bluetooth listen socket");
-            }
-            if (::bind(m_listenSocket, reinterpret_cast<struct sockaddr *>(&m_local_addr), sizeof(m_local_addr)) < 0)
-            {
-                throw std::runtime_error("failed to bind to listen socket");
-            }
-
-            if (::listen(m_listenSocket, 1) < 0)
-            {
-                throw std::runtime_error("failed to listen on listen socket");
-            }
-
-            socklen_t socklen = sizeof(m_remote_addr);
-            m_socket = ::accept(m_listenSocket, reinterpret_cast<struct sockaddr *>(&m_remote_addr), &socklen);
-
-            if (m_socket < 0)
-            {
-                throw std::runtime_error("failed to open bluetooth client socket");
-            }
-        }
-        else
-        {
-            m_socket = socket(AF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_L2CAP);
-            str2ba( remoteMAC, &m_remote_addr.l2_bdaddr );
-            if (::connect(m_socket, reinterpret_cast<struct sockaddr *>(&m_remote_addr), sizeof(m_remote_addr)) < 0)
-            {
-                throw std::runtime_error("failed to open bluetooth server socket");
-            }            
-        }
-    }
-
-    ~BTConnection()
-    {
-        close(m_listenSocket);
-        close(m_socket);
-    }
-
-    ssize_t send(std::span<const uint8_t> txData)
+    ssize_t send(std::span<const uint8_t> txData) noexcept
     {
         return write(m_socket, &txData[0], txData.size());
     }
 
-    ssize_t receive(std::span<uint8_t> rxData)
+    ssize_t receive(std::span<uint8_t> rxData) noexcept
     {
         return read(m_socket, &rxData[0], rxData.size());
     }
 
 private:
 
-    int m_listenSocket;
     int m_socket;
-    struct sockaddr_l2 m_local_addr;
     struct sockaddr_l2 m_remote_addr;
 };
 

@@ -7,7 +7,7 @@
 
 using namespace std;
 
-static char const * MAC_RASPI_5 = "D8:3A:DD:F5:BA:9F";
+//static char const * MAC_RASPI_5 = "D8:3A:DD:F5:BA:9F";
 //static char const * MAC_RASPI_4 = "DC:A6:32:BB:79:EF";
 
 array<uint8_t, 4096> rxBuf;
@@ -16,11 +16,13 @@ int main()
 {
     try
     {
+        acc::BTListenSocket listenSocket = acc::BTListenSocket();
+
         while (1)
         {
             rxBuf[0] = 0x00;
             cout << "Hello, I am node1.\n";
-            acc::BTConnection conn(MAC_RASPI_5, true); 
+            acc::BTConnection conn(&listenSocket); 
 
             while(strcmp("bye", reinterpret_cast<char *>(&rxBuf[0])))
             {
@@ -43,7 +45,8 @@ int main()
     }
     catch(const runtime_error &e)
     {
-        cerr << e.what() << '\n';
+        cerr << "Runtime Exception: " << e.what() << '\n';
+        perror("Error message: ");
         return -1;
     }
     catch(...)

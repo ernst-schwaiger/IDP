@@ -8,7 +8,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "App Launch",
+            "name": "Node1 Launch",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/node1/node1",
@@ -26,6 +26,63 @@
                 }
             ]
         },
+        {
+            "name": "Node2 Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/node2/node2",
+            "args": ["-s"],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "simple client",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/../bluetooth_demo/client",
+            "args": ["DC:A6:32:BB:79:EF", "this is a test"],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },        
+        {
+            "name": "simple server",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/../bluetooth_demo/server",
+            "args": ["DC:A6:32:BB:79:EF", "this is a test"],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },        
         {
             "name": "Test Launch",
             "type": "cppdbg",

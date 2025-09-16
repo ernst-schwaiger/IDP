@@ -18,6 +18,9 @@ add_executable(bluetooth_test
     src/bluetooth.cpp
     )
 
+# Link with libraries
+target_link_libraries(bluetooth_test PRIVATE ${LibBlueZ})
+
 # for coverage: ensure tests are executed in debug mode
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_options(bluetooth_test PRIVATE --coverage)
