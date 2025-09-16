@@ -19,10 +19,8 @@ public:
         m_listenSocket { -1 },
         m_socket { -1 },
         m_local_addr{ AF_BLUETOOTH, htobs(0x1001), { 0 }, 0, 0 },
-        m_remote_addr{ AF_BLUETOOTH, 0, { 0 }, 0, 0 }
+        m_remote_addr{ AF_BLUETOOTH, htobs(0x1001), { 0 }, 0, 0 }
     {
-        str2ba( remoteMAC, &m_local_addr.l2_bdaddr );
-
         if (listenMode)
         {
             int m_listenSocket = socket(AF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_L2CAP);
@@ -51,8 +49,9 @@ public:
         }
         else
         {
-            m_socket = ::connect(m_listenSocket, reinterpret_cast<struct sockaddr *>(&m_remote_addr), sizeof(m_remote_addr));
-            if (m_socket < 0)
+            m_socket = socket(AF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_L2CAP);
+            str2ba( remoteMAC, &m_remote_addr.l2_bdaddr );
+            if (::connect(m_socket, reinterpret_cast<struct sockaddr *>(&m_remote_addr), sizeof(m_remote_addr)) < 0)
             {
                 throw std::runtime_error("failed to open bluetooth server socket");
             }            

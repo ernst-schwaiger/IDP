@@ -3,6 +3,7 @@
 #include <bluetooth.h>
 #include <span>
 #include <stdexcept>
+#include <time.h>
 
 using namespace std;
 
@@ -15,29 +16,40 @@ int main()
 {
     try
     {
-        cout << "Hello, I am node1.\n";
-
-        acc::BTConnection conn(MAC_RASPI_5, true); 
-
-        while(1)
+        while (1)
         {
-            if (conn.receive(rxBuf) < 0)
+            rxBuf[0] = 0x00;
+            cout << "Hello, I am node1.\n";
+            acc::BTConnection conn(MAC_RASPI_5, true); 
+
+            while(strcmp("bye", reinterpret_cast<char *>(&rxBuf[0])))
             {
-                cerr << "Failed to read data from buffer.";
-            }
-            else
-            {
-                cout << &rxBuf[0] << "\n";
+                ssize_t bytes_received = conn.receive(rxBuf);
+                if (bytes_received < 0)
+                {
+                    cerr << "Failed to read data from buffer.";
+                }
+                else
+                {
+                    if (bytes_received > 0)
+                    {
+                        cout << &rxBuf[0] << "\n";
+                    }
+                }
+                usleep(5000);
             }
         }
+
     }
     catch(const runtime_error &e)
     {
         cerr << e.what() << '\n';
+        return -1;
     }
     catch(...)
     {
         cerr << "Unknown exception occurred.\n";
+        return -1;
     }
 
     return 0;
