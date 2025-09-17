@@ -17,7 +17,19 @@ cmake -DCMAKE_BUILD_TYPE=Release ..
 make -j
 ```
 
-## Test and Coverage
+## Run the Application
+
+### Node1
+
+- run `bluetoothctl show`, write down the MAC address
+- run `bluetoothctl discoverable yes`
+- run the `node1` executable 
+
+### Node2
+
+- run `node2 <MAC_ADDRESS>`, where `<MAC_ADDRESS>` is the written down MAC address of node 1
+
+## Unit Test and Coverage
 Build the binaries in `acc/debug`:
 ```
 cd acc
@@ -27,7 +39,7 @@ cmake -DCMAKE_BUILD_TYPE=Debug ..
 make -j
 ```
 
-### Execute Tests
+### Execute Unit Tests
 Either `ctest --output-on-failure` or run a test binary, e.g. `./libraries/bluetooth/bluetooth_test`.
 ### Generate Coverage Report
 ```
