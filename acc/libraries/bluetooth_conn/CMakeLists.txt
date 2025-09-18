@@ -1,14 +1,20 @@
-project(bluetooth)
+project(bluetooth_conn)
 
 # Create library
-add_library(bluetooth
+add_library(bluetooth_conn
     src/bluetooth.cpp
 )
 
 # Include headers
-target_include_directories(bluetooth PUBLIC
+target_include_directories(bluetooth_conn PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
+
+target_include_directories(bluetooth_conn PRIVATE
+    ${GIO_INCLUDE_DIRS}
+)
+
+target_link_libraries(bluetooth_conn PRIVATE ${BLUEZ_LIBRARIES} ${GIO_LIBRARIES})
 
 #
 # Tests
@@ -19,7 +25,8 @@ add_executable(bluetooth_test
     )
 
 # Link with libraries
-target_link_libraries(bluetooth_test PRIVATE ${LibBlueZ})
+target_link_libraries(bluetooth_test PRIVATE ${BLUEZ_LIBRARIES} ${GIO_LIBRARIES})
+target_link_directories(bluetooth_test PRIVATE ${GIO_LIBRARY_DIRS}) 
 
 # for coverage: ensure tests are executed in debug mode
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -29,9 +36,13 @@ endif()
 
 target_include_directories(bluetooth_test PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${GIO_INCLUDE_DIRS}
+    )
 
-target_link_libraries(bluetooth_test PRIVATE Catch2::Catch2WithMain)
+target_link_libraries(bluetooth_test PRIVATE Catch2::Catch2WithMain ${GIO_LIBRARIES})
+target_link_directories(bluetooth_test PRIVATE ${GIO_LIBRARY_DIRS}) 
+
 add_test(NAME bluetooth_test COMMAND bluetooth_test)
 
 # Custom target to run tests and generate coverage report 

@@ -5,7 +5,7 @@ Include(FetchContent)
 Include(CTest)
 
 #
-# For getting Catch2 sources
+# For checking out Catch2 sources
 #
 FetchContent_Declare(
   Catch2
@@ -13,14 +13,23 @@ FetchContent_Declare(
   GIT_TAG        v3.10.0 # or a later release
 )
 
-find_library(LibBlueZ NAMES libbluetooth.a)
-find_library(LibBlueZ NAMES bluetooth.lib)
-
-if(MYLIB_LIBRARY)
-    target_link_libraries(MyApp PRIVATE ${MYLIB_LIBRARY})
-endif()
-
 FetchContent_MakeAvailable(Catch2)
+
+#
+# Getting include paths, link paths, library names for pre-installed libraries
+#
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(BLUEZ REQUIRED bluez)
+pkg_check_modules(GIO REQUIRED gio-2.0)
+
+message("BLUEZ_LIBRARIES: ${BLUEZ_LIBRARIES}")
+message("BLUEZ_LIBRARY_DIRS: ${BLUEZ_LIBRARY_DIRS}")
+message("BLUEZ_INCLUDE_DIRS: ${BLUEZ_INCLUDE_DIRS}")
+
+message("GIO_LIBRARIES: ${GIO_LIBRARIES}")
+message("GIO_LIBRARY_DIRS: ${GIO_LIBRARY_DIRS}")
+message("GIO_INCLUDE_DIRS: ${GIO_INCLUDE_DIRS}")
+
 
 # Commonly used C++ standard settings
 set(CMAKE_CXX_STANDARD 20)
@@ -41,6 +50,6 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_6
 endif()
 
 # Add subdirectories
-add_subdirectory(libraries/bluetooth)
+add_subdirectory(libraries/bluetooth_conn)
 add_subdirectory(node1)
 add_subdirectory(node2)

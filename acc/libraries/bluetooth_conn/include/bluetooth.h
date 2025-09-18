@@ -25,6 +25,9 @@ public:
     }
 
 private:
+
+    void makeBTDeviceVisible();
+    
     int m_listenSocket;
     struct sockaddr_l2 m_local_addr;
 };

@@ -41,7 +41,6 @@ int main()
                 usleep(5000);
             }
         }
-
     }
     catch(const runtime_error &e)
     {
