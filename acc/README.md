@@ -7,11 +7,6 @@ Prerequisites:
 sudo apt install -Y g++ cmake make gcovr pkg-config bluez libglib2.0-dev
 ```
 
-If a libdbus library is missing, add
-```bash
-sudo apt install -Y libdbus-1-dev
-```
-
 ## Build
 
 Build the `node1`, `node2` release binaries as `acc/build/node1/node1` and `acc/build/node2/node2`:
