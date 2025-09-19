@@ -4,7 +4,7 @@ Adaptive cruise control project
 
 Prerequisites:
 ```bash
-sudo apt install -Y g++ cmake make gcovr pkg-config bluez libglib2.0-dev
+sudo apt install -Y g++ cmake make gcovr pkg-config bluez libglib2.0-dev latexmk texlive-latex-extra
 ```
 
 ## Build
