@@ -1,17 +1,31 @@
 \section{Software architecture and design}
 \label{chapter2}
 
+\paragraph
+{
+	If the acc is turned on, a 5ms task on node2 periodically requests distance readings from node1. Out of the
+	readings it derives the new speed of the car. In alarm situations, e.g. failed readings, an object gets too close,
+	no bt communication available, ... the acc turns off and alarms the driver to take over.
+}
+
 \subsection{Software modules}
+
+\begin{itemize}
+	\item bt\_connection on node1 and node2
+	\item acc\_control on node2
+	\item proximity\_reader on node1
+	\item display\_control on node2
+\end{itemize}
 
 
 \subsubsection{Safety related modules}
-	\begin{enumerate}
-		\item Modul x: \\
-			Description:\\
-			Functions:\\
-			Data:\\
-%			Requirements see: \ref{req.1.1}, .... \\
-	\end{enumerate}
+	% \begin{enumerate}
+	% 	\item Modul x: \\
+	% 		Description:\\
+	% 		Functions:\\
+	% 		Data:\\
+	% 		Requirements see: \ref{req.1.1}, .... \\
+	% \end{enumerate}
 
 
 \subsubsection{Security related modules}
