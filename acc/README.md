@@ -4,7 +4,7 @@ Adaptive cruise control project
 
 Prerequisites:
 ```bash
-sudo apt install -Y g++ cmake make gcovr pkg-config bluez libglib2.0-dev latexmk texlive-latex-extra
+sudo apt install -Y g++ cmake make gcovr pkg-config libbluetooth-dev bluez libglib2.0-dev latexmk texlive-latex-extra
 ```
 
 ## Build
@@ -56,3 +56,19 @@ generates a `Peer/debug/coverage.html` indicating covered/not covered parts of t
 - integrate crypto library
 - fix coverage
 - implement async send/receive in BT sockets.
+
+## Open Topics
+- Intro to project structure: CMake, LaTeX, VS Code plugins. Howto build, howto debug
+- Which OSes shall we use? Debuggability, real-time properties, boot time, ... (ask Mattias?)
+- MISRA allows exceptions in C++ code for error handling. OK in our projects as well? (Julia Teissl)
+- Encrypted messages/messages with MAC? Which Crypto Library? MAC, LibTomCrypt
+- Define Message Layout: node1->node2: (Converted) Sensor readings, message counter, MAC (Ernst)
+- Define Message Layout: node2->node1: Request ID, parameters, message counter, MAC (Ernst)
+- Discuss: Usage of 3 inch display with touch function: Has anyone used such a device yet?
+- Fault injector modules to test our software when it detects failures
+- Software design: Decouple "business logic" of our app from concrete HW to make it testable.
+- Add Unit Tests, see Catch2 Tests, have a look at the coverage report.
+- Who takes which tasks?
+-- Stefan: Node1, proximity devices
+-- Lorenzo: Touch Display
+-- Ernst: Communication/Crypto :-).
