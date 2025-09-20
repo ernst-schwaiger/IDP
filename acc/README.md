@@ -4,13 +4,29 @@ Adaptive cruise control project
 
 Prerequisites:
 ```bash
-sudo apt install -Y g++ cmake make gcovr pkg-config libbluetooth-dev bluez libglib2.0-dev latexmk texlive-latex-extra
+sudo apt install -y g++ cmake make gcovr pkg-config libbluetooth-dev bluez libglib2.0-dev
+```
+
+for building the documentation:
+```bash
+sudo apt install -y texlive latexmk texlive-latex-extra
 ```
 
 ## Build
 
-Build the `node1`, `node2` release binaries as `acc/build/node1/node1` and `acc/build/node2/node2`:
+In order for cmake to find libtommath in the acc project, check it out and build it in a local folder
+
+```bash
+git clone https://github.com/libtom/libtommath.git
+cd libtommath
+mkdir -p build
+cd build
+cmake ..
+make -sj
 ```
+
+Build the `node1`, `node2` release binaries as `acc/build/node1/node1` and `acc/build/node2/node2`:
+```bash
 cd acc
 mkdir release
 cd release

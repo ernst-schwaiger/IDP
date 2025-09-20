@@ -87,6 +87,38 @@ void BTConnectionCryptoWrapper::generateSessionKey(std::span<uint8_t const> remo
     m_optSessionKey = sessionKey;
 }
 
+void BTConnectionCryptoWrapper::generateHMAC(std::span<uint8_t const> data, std::span<uint8_t> hmac) const
+{
+    if (!m_optSessionKey.has_value())
+    {
+        throw runtime_error("No session key for calculating hmac is available.");
+    }
+
+    hmac_state hs;
+
+
+    if (hmac_init(&hs, find_hash("sha256"), begin(*m_optSessionKey), m_optSessionKey->size()) != CRYPT_OK)
+    {
+        throw runtime_error("Failed to initialize hmac.");
+    }
+
+    if (hmac_process(&hs, &data[0], data.size()) != CRYPT_OK)
+    {
+        throw runtime_error("Failed to calculate hmac.");
+    }
+
+    unsigned long hmac_size = hmac.size();
+    if (hmac_done(&hs, &hmac[0], &hmac_size) != CRYPT_OK)
+    {
+        throw runtime_error("Failed to calculate hmac.");
+    }
+
+    if (hmac_size != 256 / 8)
+    {
+        throw runtime_error("Failed to calculate hmac.");
+    }
+}
+
 BTConnectionCryptoWrapper::~BTConnectionCryptoWrapper()
 {
 }
@@ -212,6 +244,8 @@ void BTConnection::keyExchangeClient()
     }
 
     m_cryptoWrapper.generateSessionKey({ &remoteKeyMsg[1], remoteKeyMsg.size() - 1});
+
+    // FIXME: Send an ack that the remote rnd number arrived sccessfully
 }
 
 void BTConnection::keyExchangeServer()
@@ -225,6 +259,8 @@ void BTConnection::keyExchangeServer()
     }
     sendLocalRandom();
     m_cryptoWrapper.generateSessionKey({ &remoteKeyMsg[1], remoteKeyMsg.size() - 1});
+    
+    // FIXME: Receive an ack to ensure that the local rnd number arrived at the remote node
 }
 
 ssize_t BTConnection::send(std::span<const uint8_t> txData) noexcept
