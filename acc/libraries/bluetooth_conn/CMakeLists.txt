@@ -14,18 +14,19 @@ target_include_directories(bluetooth_conn PRIVATE
     ${GIO_INCLUDE_DIRS}
 )
 
-target_link_libraries(bluetooth_conn PRIVATE ${BLUEZ_LIBRARIES} ${GIO_LIBRARIES})
+target_link_libraries(bluetooth_conn PRIVATE ${BLUEZ_LIBRARIES} ${GIO_LIBRARIES} libtomcrypt)
 
 #
 # Tests
 #
 add_executable(bluetooth_test 
     test/bluetooth_test.cpp
+    test/crypto_wrapper_test.cpp
     src/bluetooth.cpp
     )
 
 # Link with libraries
-target_link_libraries(bluetooth_test PRIVATE ${BLUEZ_LIBRARIES} ${GIO_LIBRARIES})
+target_link_libraries(bluetooth_test PRIVATE Catch2::Catch2WithMain ${BLUEZ_LIBRARIES} ${GIO_LIBRARIES} libtomcrypt)
 target_link_directories(bluetooth_test PRIVATE ${GIO_LIBRARY_DIRS}) 
 
 # for coverage: ensure tests are executed in debug mode
@@ -39,9 +40,6 @@ target_include_directories(bluetooth_test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${GIO_INCLUDE_DIRS}
     )
-
-target_link_libraries(bluetooth_test PRIVATE Catch2::Catch2WithMain ${GIO_LIBRARIES})
-target_link_directories(bluetooth_test PRIVATE ${GIO_LIBRARY_DIRS}) 
 
 add_test(NAME bluetooth_test COMMAND bluetooth_test)
 

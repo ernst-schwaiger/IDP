@@ -4,6 +4,7 @@
 #include <span>
 #include <stdexcept>
 #include <time.h>
+#include <unistd.h>
 
 using namespace std;
 
@@ -22,7 +23,8 @@ int main()
         {
             rxBuf[0] = 0x00;
             cout << "Hello, I am node1.\n";
-            acc::BTConnection conn(&listenSocket); 
+            acc::BTConnection conn(&listenSocket);
+            conn.keyExchangeServer(); 
 
             while(strcmp("bye", reinterpret_cast<char *>(&rxBuf[0])))
             {

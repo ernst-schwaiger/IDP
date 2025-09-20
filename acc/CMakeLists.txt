@@ -10,10 +10,30 @@ Include(CTest)
 FetchContent_Declare(
   Catch2
   GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-  GIT_TAG        v3.10.0 # or a later release
+  GIT_TAG        v3.10.0
 )
 
-FetchContent_MakeAvailable(Catch2)
+#
+# LibTomMath
+#
+FetchContent_Declare(
+  TomMath
+  GIT_REPOSITORY https://github.com/libtom/libtommath.git
+  GIT_TAG        v1.3.0
+)
+
+#
+# libtomcrypt (requires libtommath being installed upfront!)
+#
+FetchContent_Declare(
+  TomCrypt
+  GIT_REPOSITORY https://github.com/libtom/libtomcrypt.git
+  GIT_TAG        d448df1938e8988bcdb0eed6591387e82b26874b)
+
+FetchContent_MakeAvailable(Catch2 TomMath TomCrypt)
+
+# use libtommath descriptor in libtomcrypt
+target_compile_options(libtomcrypt PRIVATE "-DLTM_DESC")
 
 #
 # Getting include paths, link paths, library names for pre-installed libraries
@@ -38,7 +58,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Increase Warnings, treat warnings as errors
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
 
 # Enable AddressSanitizer for X86_64 Debug builds on clang or gcc only
 # Sanitizers don't seem to work on ARM/Raspberry Pi

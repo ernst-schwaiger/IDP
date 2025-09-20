@@ -85,6 +85,8 @@ int main(int argc, char *argv[])
         // Set up a BT connection to node1
         BTConnection conn(argv[1]);
 
+        conn.keyExchangeClient();
+
         // Activate our 5ms task
         timer_t timerId = setup_task(5, task_5_ms, &conn);
 

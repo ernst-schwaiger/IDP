@@ -1,10 +1,95 @@
-#include "bluetooth.h"
+#include <stdexcept>
+#include <cstring>
 
 #include <gio/gio.h>
 #include <glib.h>
+#include <unistd.h>
+#include <sys/socket.h>
+
+#include <tomcrypt.h>
+#include "bluetooth.h"
+
+using namespace std;
 
 namespace acc
 {
+
+// FIXME: Cleanup, provide a real random bytestream here
+
+const array<uint8_t, 32> BTConnectionCryptoWrapper::SHARED_KEY = 
+{
+    0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+    0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+    0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+    0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
+};
+
+BTConnectionCryptoWrapper::BTConnectionCryptoWrapper()
+{
+    crypt_mp_init("LibTomMath");
+    if (register_hash(&sha256_desc) != CRYPT_OK)
+    {
+        throw runtime_error("Could not get libtom sha256.");
+    }
+
+    if (register_prng(&sprng_desc) != CRYPT_OK)
+    {
+        throw runtime_error("Could not get libtom secure random generator.");
+    }
+
+    if (register_cipher(&aes_desc) == -1)
+    {
+        throw runtime_error("Could not register rijndael/aes cipher");
+    }
+
+    int wprng = find_prng("sprng");
+
+    if (wprng < 0)
+    {
+        throw runtime_error("Could not get RNG");
+    }
+
+    prng_state prngState;
+
+    if (rng_make_prng(m_localRandomNumber.size() * 8, wprng, &prngState, nullptr) != CRYPT_OK)
+    {
+        throw runtime_error("Could not get sufficient entropy bits.");
+    }
+
+    if (rng_get_bytes(m_localRandomNumber.data(), m_localRandomNumber.size(), nullptr) < m_localRandomNumber.size())
+    {
+        throw runtime_error("Could not get sufficient random data.");
+    }    
+}
+
+void BTConnectionCryptoWrapper::generateSessionKey(std::span<uint8_t const> remoteRandomNumber)
+{
+    // create the common salt: append the larger random number to the smaller one
+    std::array<uint8_t, 64> salt;
+    if (std::memcmp(begin(m_localRandomNumber), &remoteRandomNumber[0], m_localRandomNumber.size()) < 0)
+    {
+        std::copy(begin(m_localRandomNumber), end(m_localRandomNumber), begin(salt));
+        std::copy(begin(remoteRandomNumber), end(remoteRandomNumber), begin(salt) + 32);
+    }
+    else
+    {
+        std::copy(begin(remoteRandomNumber), end(remoteRandomNumber), begin(salt));
+        std::copy(begin(m_localRandomNumber), end(m_localRandomNumber), begin(salt)+ 32);
+    }
+
+    array<uint8_t, 32> sessionKey;
+
+    if (hkdf(find_hash("sha256"), begin(salt), salt.size(), nullptr, 0, begin(SHARED_KEY), SHARED_KEY.size(), begin(sessionKey), sessionKey.size()) != CRYPT_OK)
+    {
+        throw runtime_error("Could not calculate common key");
+    }
+
+    m_optSessionKey = sessionKey;
+}
+
+BTConnectionCryptoWrapper::~BTConnectionCryptoWrapper()
+{
+}
 
 BTListenSocket::BTListenSocket() : 
     m_local_addr{ AF_BLUETOOTH, htobs(0x1001), { 0 }, 0, 0 }
@@ -106,14 +191,56 @@ BTConnection::BTConnection(char const *remoteMAC) :
     }            
 }
 
+ssize_t BTConnection::sendLocalRandom() noexcept
+{
+    array<uint8_t, 33> msgPayload;
+    array<uint8_t, 32> const &localRandom = m_cryptoWrapper.getLocalRandomNumber();
+    msgPayload[0] = 0;
+    copy(begin(localRandom), end(localRandom), &msgPayload[1]);
+    return send(msgPayload);
+}
+
+void BTConnection::keyExchangeClient()
+{
+    // Determine session key
+    array<uint8_t, 33> remoteKeyMsg;
+    sendLocalRandom();
+    ssize_t remoteRandom = receive(remoteKeyMsg);
+    if ((remoteRandom != 33) || (remoteKeyMsg[0] != 0))
+    {
+        throw runtime_error("Received incorrect random message from server");
+    }
+
+    m_cryptoWrapper.generateSessionKey({ &remoteKeyMsg[1], remoteKeyMsg.size() - 1});
+}
+
+void BTConnection::keyExchangeServer()
+{
+    // Determine session key
+    array<uint8_t, 33> remoteKeyMsg;
+    ssize_t remoteRandom = receive(remoteKeyMsg);
+    if ((remoteRandom != 33) || (remoteKeyMsg[0] != 0))
+    {
+        throw runtime_error("Received incorrect random message from server");
+    }
+    sendLocalRandom();
+    m_cryptoWrapper.generateSessionKey({ &remoteKeyMsg[1], remoteKeyMsg.size() - 1});
+}
+
+ssize_t BTConnection::send(std::span<const uint8_t> txData) noexcept
+{
+    return write(m_socket, &txData[0], txData.size());
+}
+
+ssize_t BTConnection::receive(std::span<uint8_t> rxData) noexcept
+{
+    return read(m_socket, &rxData[0], rxData.size());
+}
+
 BTConnection::~BTConnection()
 {
     close(m_socket);
 }
-
-
-
-
 
 } // namespace acc
 

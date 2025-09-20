@@ -88,7 +88,7 @@
             "type": "cppdbg",
             "request": "launch",
 
-            "program": "${workspaceFolder}/build/libraries/bluetooth/bluetooth_test",
+            "program": "${workspaceFolder}/build/libraries/bluetooth_conn/bluetooth_test",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
