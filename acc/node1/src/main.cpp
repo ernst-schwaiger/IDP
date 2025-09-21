@@ -1,15 +1,11 @@
 #include <iostream>
-#include <array>
-#include <bluetooth.h>
-#include <span>
 #include <stdexcept>
 #include <time.h>
 #include <unistd.h>
 
-using namespace std;
+#include <CryptoComm.h>
 
-//static char const * MAC_RASPI_5 = "D8:3A:DD:F5:BA:9F";
-//static char const * MAC_RASPI_4 = "DC:A6:32:BB:79:EF";
+using namespace std;
 
 array<uint8_t, 4096> rxBuf;
 

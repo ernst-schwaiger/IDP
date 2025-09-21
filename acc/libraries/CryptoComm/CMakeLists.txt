@@ -22,9 +22,7 @@ target_link_libraries(CryptoComm PRIVATE ${BLUEZ_LIBRARIES} ${GIO_LIBRARIES} lib
 # Tests
 #
 add_executable(CryptoCommTest 
-    test/bluetooth_test.cpp
     test/CryptoWrapperTest.cpp
-    src/bluetooth.cpp
     src/CryptoWrapper.cpp
     )
 
