@@ -11,7 +11,7 @@ namespace acc
 {
 // FIXME: Cleanup, provide a real random bytestream here
 
-const array<uint8_t, 32> CryptoWrapper::SHARED_KEY = 
+const array<uint8_t, 32> CryptoWrapper::PRE_SHARED_KEY = 
 {
     0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
     0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
@@ -74,7 +74,7 @@ void CryptoWrapper::generateSessionKey(std::span<uint8_t const> remoteRandomNumb
 
     array<uint8_t, 32> sessionKey;
 
-    if (hkdf(find_hash("sha256"), begin(salt), salt.size(), nullptr, 0, begin(SHARED_KEY), SHARED_KEY.size(), begin(sessionKey), sessionKey.size()) != CRYPT_OK)
+    if (hkdf(find_hash("sha256"), begin(salt), salt.size(), nullptr, 0, begin(PRE_SHARED_KEY), PRE_SHARED_KEY.size(), begin(sessionKey), sessionKey.size()) != CRYPT_OK)
     {
         throw runtime_error("Could not calculate common key");
     }
@@ -123,6 +123,20 @@ uint8_t CryptoWrapper::generateHMAC(std::span<uint8_t const> data, std::span<uin
 
 uint8_t CryptoWrapper::verifyHMAC(std::span<uint8_t const> data, std::span<uint8_t const> hmac) const
 {
+    array<uint8_t, 32> genHMAC;
+    generateHMAC(data, genHMAC);
+
+    if ((genHMAC.size() != 256 / 8) || (hmac.size() != 256 / 8))
+    {
+        //throw runtime_error("Failed to calculate hmac.");
+        return 5;
+    }
+
+    if (memcmp(&genHMAC[0], &hmac[0], genHMAC.size()) != 0)
+    {
+        return 6;
+    }
+
     return 0; // FIXME: Implement
 }
 

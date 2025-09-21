@@ -123,16 +123,24 @@ ssize_t BTConnection::receiveWithCounterAndMAC(uint8_t &msgType, std::span<uint8
 
     uint32_t overheadLength = TYPE_LEN + COUNTER_LEN + MAC_LEN;
     ssize_t payloadLength = rxMsgLen - overheadLength;
-    if (payload.size() < payloadLength)
+    if (payloadLength < 0)
+    {
+        return -1;
+    }
+
+    if (payload.size() < static_cast<size_t>(payloadLength))
     {
         return -1; // Cannot copy full payload into payload span
     }
 
     uint32_t remoteCounter = deSerializeUint32(&rxBuf[1]);
-    if (m_remoteCounter != remoteCounter)
+    // accept higher counters, but not lower ones, prevents replay attacks
+    if (m_remoteCounter > remoteCounter)
     {
-        return -1; // unexpected message counter. // FIXME: We probably need to defined an acceptable counter window
+        return -1; // unexpected message counter.
     }
+
+    m_remoteCounter = remoteCounter + 1;
 
     if (m_cryptoWrapper.verifyHMAC({&rxBuf[0], rxBuf.size() - MAC_LEN}, 
         {&rxBuf[rxBuf.size() - MAC_LEN], MAC_LEN}) != 0)
@@ -159,7 +167,6 @@ uint32_t BTConnection::deSerializeUint32(uint8_t const *pBuf) const
 {
     return (pBuf[0] << 24) | (pBuf[1] << 16) | (pBuf[2] << 8) | pBuf[3];
 }
-
 
 BTConnection::~BTConnection()
 {

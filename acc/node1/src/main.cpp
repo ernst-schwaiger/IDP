@@ -18,7 +18,7 @@ int main()
 
         while (1)
         {
-            array<uint8_t, 4096> rxBuf;
+            array<uint8_t, MAX_MSG_LEN> rxBuf;
             rxBuf[0] = 0x00;
             uint8_t msgType = 0x00;
 

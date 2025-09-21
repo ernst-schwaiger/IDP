@@ -22,7 +22,7 @@ public:
     std::optional<std::array<uint8_t, 32>> const &getSessionKey() const { return m_optSessionKey; }
 
 private:
-    static const std::array<uint8_t,32> SHARED_KEY;
+    static const std::array<uint8_t,32> PRE_SHARED_KEY;
     std::array<uint8_t, 32> m_localRandomNumber;
     std::optional<std::array<uint8_t, 32>> m_optSessionKey;
 };

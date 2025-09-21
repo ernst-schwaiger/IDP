@@ -66,12 +66,12 @@ generates a `Peer/debug/coverage.html` indicating covered/not covered parts of t
 
 ## TODOs
 
-- Add proper bluetooth API to common library
 - detailed concept for acc
 - check: is encryption needed for bluetooth comm, or is MAC with counter sufficient?
-- integrate crypto library
 - fix coverage
 - implement async send/receive in BT sockets.
+- implement async reading of proximity sensors
+- remove reinterpret_casts
 
 ## Open Topics
 - Intro to project structure: CMake, LaTeX, VS Code plugins. Howto build, howto debug
