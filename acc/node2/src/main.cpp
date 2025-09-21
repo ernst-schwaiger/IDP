@@ -15,10 +15,10 @@ typedef void (*task_type) (union sigval);
 
 // Global variables
 static char const *BYE = "bye";
+static uint32_t gSuccessfulRxMsgs;
 
 static void task_5_ms(union sigval arg)
 {
-    static uint32_t counter = 0;
     if (arg.sival_ptr != nullptr)
     {
         array<uint8_t, MAX_MSG_LEN> msgBuf = { 0 };
@@ -28,13 +28,20 @@ static void task_5_ms(union sigval arg)
         {
             cerr << "Failed to send data from buffer.\n";
         }
-        counter++;
-
-        uint8_t msgType;
-        if (conn->receiveWithCounterAndMAC(msgType, {&msgBuf[0], msgBuf.size()}) < 0)
+        else
         {
-            cerr << "Failed to receive sensor readings.\n";
+            // wait for the response
+            uint8_t msgType;
+            if (conn->receiveWithCounterAndMAC(msgType, {&msgBuf[0], msgBuf.size()}) < 0)
+            {
+                cerr << "Failed to receive sensor readings.\n";
+            }
+            else
+            {
+                gSuccessfulRxMsgs++;
+            }
         }
+
     }
 }
 
@@ -92,7 +99,7 @@ int main(int argc, char *argv[])
         BTConnection conn(argv[1]);
 
         conn.keyExchangeClient();
-
+        gSuccessfulRxMsgs = 0;
         // Activate our 5ms task
         timer_t timerId = setup_task(5, task_5_ms, &conn);
 
@@ -103,6 +110,7 @@ int main(int argc, char *argv[])
         // send the end token to inform the server we are done
         std::span<const uint8_t> byeSpan(reinterpret_cast<uint8_t const *>(BYE), strlen(BYE) + 1);
         conn.send(byeSpan);
+        cout << "Received " << gSuccessfulRxMsgs << " readings successfully\n";
     }
     catch(const runtime_error &e)
     {

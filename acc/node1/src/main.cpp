@@ -42,13 +42,7 @@ int main()
                     {
                         cerr << "Failed to send distance reading.";
                     }
-
-                    if (bytes_received > 0)
-                    {
-                        cout << &rxBuf[0] << "\n";
-                    }
                 }
-                usleep(5000);
             }
         }
     }
