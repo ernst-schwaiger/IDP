@@ -21,15 +21,20 @@ static void task_5_ms(union sigval arg)
     static uint32_t counter = 0;
     if (arg.sival_ptr != nullptr)
     {
-        char buf[40];
-        sprintf(buf, "Msg: %d", counter);
-        std::span<const uint8_t> mySpan(reinterpret_cast<uint8_t const *>(buf), strlen(buf) + 1);
-
-        if (reinterpret_cast<BTConnection *>(arg.sival_ptr)->send(mySpan) < 0)
+        array<uint8_t, MAX_MSG_LEN> msgBuf = { 0 };
+        BTConnection *conn = reinterpret_cast<BTConnection *>(arg.sival_ptr);
+        // just send a dummy byte
+        if (conn->sendWithCounterAndMAC(0x01, {&msgBuf[0], 1}) < 0)
         {
             cerr << "Failed to send data from buffer.\n";
         }
         counter++;
+
+        uint8_t msgType;
+        if (conn->receiveWithCounterAndMAC(msgType, {&msgBuf[0], msgBuf.size()}) < 0)
+        {
+            cerr << "Failed to receive sensor readings.\n";
+        }
     }
 }
 

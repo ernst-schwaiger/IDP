@@ -30,9 +30,17 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/libtom/libtomcrypt.git
   GIT_TAG        d448df1938e8988bcdb0eed6591387e82b26874b)
 
-FetchContent_MakeAvailable(Catch2 TomMath TomCrypt)
+#
+# pigpio
+#
+FetchContent_Declare(
+  pigpio
+  GIT_REPOSITORY https://github.com/joan2937/pigpio.git
+  GIT_TAG        v79)
 
-# use libtommath descriptor in libtomcrypt
+FetchContent_MakeAvailable(Catch2 TomMath TomCrypt pigpio)
+
+# use libtommath descriptor in TomCrypt
 target_compile_options(libtomcrypt PRIVATE "-DLTM_DESC")
 
 #
