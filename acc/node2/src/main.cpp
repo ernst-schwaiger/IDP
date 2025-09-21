@@ -15,7 +15,10 @@ typedef void (*task_type) (union sigval);
 
 // Global variables
 static char const *BYE = "bye";
-static uint32_t gSuccessfulRxMsgs;
+static uint32_t gSuccessRxMsgs;
+static uint32_t gFailRxMsgs;
+static uint32_t gSuccessTxMsgs;
+static uint32_t gFailTxMsgs;
 
 static void task_5_ms(union sigval arg)
 {
@@ -26,22 +29,22 @@ static void task_5_ms(union sigval arg)
         // just send a dummy byte
         if (conn->sendWithCounterAndMAC(0x01, {&msgBuf[0], 1}) < 0)
         {
-            cerr << "Failed to send data from buffer.\n";
+            gFailTxMsgs++;
         }
         else
         {
+            gSuccessTxMsgs++;
             // wait for the response
             uint8_t msgType;
             if (conn->receiveWithCounterAndMAC(msgType, {&msgBuf[0], msgBuf.size()}) < 0)
             {
-                cerr << "Failed to receive sensor readings.\n";
+                gFailRxMsgs++;
             }
             else
             {
-                gSuccessfulRxMsgs++;
+                gSuccessRxMsgs++;
             }
         }
-
     }
 }
 
@@ -99,18 +102,33 @@ int main(int argc, char *argv[])
         BTConnection conn(argv[1]);
 
         conn.keyExchangeClient();
-        gSuccessfulRxMsgs = 0;
+        gSuccessRxMsgs = 0;
+        gFailRxMsgs = 0;
+        gSuccessTxMsgs = 0;
+        gFailTxMsgs = 0;
+#if 1
         // Activate our 5ms task
         timer_t timerId = setup_task(5, task_5_ms, &conn);
 
         sleep(10); // let the task run for 10 secs, ~2000 times
         stop_timer(timerId);
         sleep(1); // be sure the timer does not fire any more
+#else
+        // for debugging
+        union sigval arg;
+        arg.sival_ptr = &conn;
+        for (uint32_t idx = 0; idx < 200; idx++)
+        {
+            task_5_ms(arg);
+            usleep(5000);
+        }
+#endif
 
         // send the end token to inform the server we are done
         std::span<const uint8_t> byeSpan(reinterpret_cast<uint8_t const *>(BYE), strlen(BYE) + 1);
-        conn.send(byeSpan);
-        cout << "Received " << gSuccessfulRxMsgs << " readings successfully\n";
+        conn.sendWithCounterAndMAC(0x03, byeSpan);
+        cout << "Received " << gSuccessRxMsgs << " readings successfully, failed " << gFailRxMsgs << " rx messages\n";
+        cout << "Sent " << gSuccessTxMsgs << " messages successfully, failed " << gFailTxMsgs << " tx messages\n";
     }
     catch(const runtime_error &e)
     {

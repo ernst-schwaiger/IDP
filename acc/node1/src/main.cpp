@@ -18,6 +18,11 @@ int main()
 
         while (1)
         {
+            uint32_t numTxFails = 0;
+            uint32_t numTxSuccess = 0;
+            uint32_t numRxFails = 0;
+            uint32_t numRxSuccess = 0;
+
             array<uint8_t, MAX_MSG_LEN> rxBuf;
             rxBuf[0] = 0x00;
             uint8_t msgType = 0x00;
@@ -26,24 +31,31 @@ int main()
             acc::BTConnection conn(&listenSocket);
             conn.keyExchangeServer(); 
 
-            while(msgType != 0x03)
+            while(msgType != 0x03) // 0x03 is the message type to terminate the server session
             {
-
                 ssize_t bytes_received = conn.receiveWithCounterAndMAC(msgType, rxBuf);
                 if (bytes_received < 0)
                 {
-                    cerr << "Failed to read data from buffer.";
+                    numRxFails++;
                 }
                 else
                 {
+                    numRxSuccess++;
                     double d = sensor.getDistanceCm(); // FIXME, put in a thread, add timeout
                     // FIXME: Get rid of the reinterpret_cast
                     if (conn.sendWithCounterAndMAC(0x02, {reinterpret_cast<uint8_t const *>(&d), sizeof(d)}) < 0)
                     {
-                        cerr << "Failed to send distance reading.";
+                        numTxFails++;
+                    }
+                    else
+                    {
+                        numTxSuccess++;
                     }
                 }
             }
+
+            cout << "Tx Fails: " << numTxFails << ", Rx Fails: " << numRxFails << "\n";
+            cout << "Tx Success: " << numTxSuccess << ", Rx Success: " << numRxSuccess << "\n";
         }
     }
     catch(const runtime_error &e)

@@ -25,6 +25,9 @@ BTConnection::BTConnection(BTListenSocket *pListenSocket) :
 }
 
 BTConnection::BTConnection(char const *remoteMAC) : 
+    m_cryptoWrapper{},
+    m_localCounter { 0 },
+    m_remoteCounter { 0 },
     m_remote_addr{ AF_BLUETOOTH, htobs(0x1001), { 0 }, 0, 0 }
 {
     m_socket = socket(AF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_L2CAP);
@@ -82,7 +85,8 @@ ssize_t BTConnection::send(std::span<const uint8_t> txData) noexcept
 
 ssize_t BTConnection::receive(std::span<uint8_t> rxData) noexcept
 {
-    return read(m_socket, &rxData[0], rxData.size());
+    ssize_t ret = read(m_socket, &rxData[0], rxData.size());
+    return ret;
 }
 
 ssize_t BTConnection::sendWithCounterAndMAC(uint8_t msgType, std::span<const uint8_t> txData) noexcept
@@ -113,20 +117,21 @@ ssize_t BTConnection::sendWithCounterAndMAC(uint8_t msgType, std::span<const uin
 
 ssize_t BTConnection::receiveWithCounterAndMAC(uint8_t &msgType, std::span<uint8_t> payload) noexcept
 {
+    uint32_t overheadLength = TYPE_LEN + COUNTER_LEN + MAC_LEN;
     array<uint8_t, MAX_MSG_LEN> rxBuf;
     ssize_t rxMsgLen = receive(rxBuf);
 
-    if (rxMsgLen < 0)
-    {
-        return rxMsgLen;
-    }
+    // if (rxMsgLen < 0)
+    // {
+    //     return rxMsgLen;
+    // }
 
-    uint32_t overheadLength = TYPE_LEN + COUNTER_LEN + MAC_LEN;
-    ssize_t payloadLength = rxMsgLen - overheadLength;
-    if (payloadLength < 0)
+    if (rxMsgLen <= overheadLength)
     {
         return -1;
     }
+
+    ssize_t payloadLength = rxMsgLen - overheadLength;
 
     if (payload.size() < static_cast<size_t>(payloadLength))
     {
@@ -142,8 +147,8 @@ ssize_t BTConnection::receiveWithCounterAndMAC(uint8_t &msgType, std::span<uint8
 
     m_remoteCounter = remoteCounter + 1;
 
-    if (m_cryptoWrapper.verifyHMAC({&rxBuf[0], rxBuf.size() - MAC_LEN}, 
-        {&rxBuf[rxBuf.size() - MAC_LEN], MAC_LEN}) != 0)
+    if (m_cryptoWrapper.verifyHMAC({&rxBuf[0], static_cast<uint32_t>(rxMsgLen) - MAC_LEN}, 
+        {&rxBuf[rxMsgLen - MAC_LEN], MAC_LEN}) != 0)
     {
         return -1;
     }
