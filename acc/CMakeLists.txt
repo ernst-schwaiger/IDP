@@ -70,6 +70,6 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_6
 endif()
 
 # Add subdirectories
-add_subdirectory(libraries/bluetooth_conn)
+add_subdirectory(libraries/CryptoComm)
 add_subdirectory(node1)
 add_subdirectory(node2)
