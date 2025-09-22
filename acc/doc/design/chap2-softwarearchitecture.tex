@@ -2,11 +2,9 @@
 \label{chapter2}
 
 \paragraph
-{
-	If the acc is turned on, a 5ms task on node2 periodically requests distance readings from node1. Out of the
-	readings it derives the new speed of the car. In alarm situations, e.g. failed readings, an object gets too close,
-	no bt communication available, ... the acc turns off and alarms the driver to take over.
-}
+{}
+	%If the acc is turned on, a 5ms task on node2 periodically requests distance readings from node1. Out of the readings it derives the new speed of the car. In alarm situations, e.g. failed readings, an object gets too close, no bt communication available, ... the acc turns off and alarms the driver to take over.
+When the ACC is activated, Node 2 executes a periodic task every 5 ms to request distance measurements from Node 1. Based on these readings, it calculates the updated speed of the virtual car. In case of an alarm situation - such as invalid or missing sensor data, an object detected at critical distance, or a loss of Bluetooth communication - the ACC is automatically deactivated and the driver is alerted to take control.
 
 \subsection{Software modules}
 

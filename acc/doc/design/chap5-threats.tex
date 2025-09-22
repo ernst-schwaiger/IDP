@@ -5,9 +5,30 @@
 
 
 	\begin{enumerate}
-		\item Threat 1: 
-		\item Threat 2:
-		\item Threat 3:
+		\item \textbf{Threat 1:} Manipulation
+            
+            \textbf{Description:} An attacker could attempt to alter the messages transmitted between Node 1 and Node 2. This could result in false sensor data or control commands being introduced, leading to dangerous situations (e.g., incorrect distance = incorrect speed control).
+            
+            \textbf{Solution:} Data integrity is ensured by an HMAC (hash-based message authentication code).
+%			Requirement see \ref{req.1.1} \\
+        
+        \paragraph{} 
+		\item \textbf{Threat 2:} Denial of Service (DoS)
+            
+            \textbf{Description:} An attacker or jammer could block the Bluetooth connection (e.g., through jamming or flooding). This would render sensor data unavailable and cause the ACC to lose its basis.
+            
+            \textbf{Solution:} Implementation of a timeout mechanism for Bluetooth messages. If the connection fails for longer than a defined period of time, the system automatically switches to manual operation.
+%			Requirement see \ref{req.1.1} \\
+        
+        \paragraph{} 
+		\item \textbf{Threat 3:} Replay-Attack
+            
+            \textbf{Description:} An attacker could resend previously intercepted messages to Node 2 (replay). This could allow outdated but formally valid distance data to be used, leading to dangerous rule decisions.
+            
+            \textbf{Solution:} Use of a sequence counter or sequential message number in each packet.
+%			Requirement see \ref{req.1.1} \\
+        
+        \paragraph{} 
 	\end{enumerate}
 	
 \subsection{Identified threats without countermeasures}

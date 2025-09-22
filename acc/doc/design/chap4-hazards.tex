@@ -1,20 +1,42 @@
 \section{Hazard identification}
 \label{chapter4}
 
+This chapter focuses on hazards. The emphasis is on preventing injury to living beings while ensuring the best possible use of the ACC.
+
 \subsection{Identified hazards and countermeasures}
 
 
 	\begin{enumerate}
-		\item Hazard 1: 
+		\item \textbf{Hazard 1:} Sensor failure - incorrect distance measurement
+            
+            \textbf{Description:} A failure or malfunction of an ultrasonic sensor can lead to implausible distance values. This can result in obstacles not being detected or incorrect distances being transmitted. Since speed control depends directly on these measured values, this poses a significant safety risk.
+            
+            \textbf{Solution:} Use of two redundant sensors + comparison and plausibility check of the two measured values: Only if both are within a defined tolerance are they considered valid.
 %			Requirement see \ref{req.1.1} \\
-		\item Hazard 2:
-		\item Hazard 3:
+
+        \paragraph{}
+		\item \textbf{Hazard 2:} Bluetooth Connection Loss
+            
+            \textbf{Description:} A connection failure between Node 1 and Node 2 via the Bluetooth interface means that distance information can no longer be transmitted. As a result, Node 2 loses the basis for speed control, which can lead to unsafe driving behavior.
+            
+            \textbf{Solution:} Implementation of a timeout mechanism: If no valid data is received within, for example, 300 ms, the ACC system is automatically deactivated. + Alarm indicator on the display to alert the driver to the failure.
+%			Requirement see \ref{req.1.1} \\
+        
+        \paragraph{}
+		\item \textbf{Hazard 3:} Sensor inconsistency
+            
+            \textbf{Description:} Even if both sensors are still working, their measured values may differ from each other (e.g., due to interference, different reflection angles, or partial coverage). This inconsistency can lead to incorrect decisions in speed control.
+            
+            \textbf{Solution:} Consistency check: The measured values of both sensors are compared with each other. If the difference exceeds a defined threshold value, the result is considered inconsistent.
+%			Requirement see \ref{req.1.1} \\
+        
+        \paragraph{}
 	\end{enumerate}
 	
 \subsection{Identified hazards without countermeasures }
 
 	\begin{enumerate}
-		\item Hazard 1: 
-		\item Hazard 2:
-		\item Hazard 3:
+		\item \textbf{Hazard 1:} 
+		\item \textbf{Hazard 2:}
+		\item \textbf{Hazard 3:}
 	\end{enumerate}
