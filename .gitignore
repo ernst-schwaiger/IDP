@@ -13,6 +13,9 @@
 *.toc
 *.fls
 
+# drawio backup files
+*.bkp
+
 # Ignore build output directory
 build
 debug
