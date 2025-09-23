@@ -42,3 +42,22 @@ Definition of priorities.
 
 \subsection{Pinout}
 
+\subsection{GUI}
+
+\ref{fig:gui} shows the dashboard GUI, containing the controls for accelerating and decelerating the vehicle, and for activating adaptive cruise control. It also contains elements showing the vehicles current speed, the distance to the nearest object in front of the car, and the status of the ACC system.
+
+\begin{figure}[h]
+	\includegraphics[height=50mm]{images/GUI.png}
+	\centering
+	\caption{Dashboard GUI}
+	\label{fig:gui}
+\end{figure}
+
+\begin{enumerate}
+  \item ACC Status LED: Shows the status of the ACC system, green if it is in an operational state, red, if ACC  is in a failed state.
+  \item ACC Button: Push Button to activate ACC. Can only be pushed if ACC is in operational state and not turned on already.
+  \item Accelerate Button: Increases the vehicle speed by 5 km/h (up to 200 km/h), deactivates ACC, if it was active.
+  \item Decelerate Button: Decreases the vehicle speed by 5 km/h (down to 0 km/h), deactivates ACC, if it was active.
+  \item Speed Display: Shows current vehicle speed
+  \item Distance Display: Shows distance of the nearest object in front of the vehicle, does not display anything if ACC is in failed state.
+\end{enumerate}
