@@ -7,19 +7,56 @@
 
 
 
-	% \begin{enumerate}[label*=\arabic*.]
-	% 	\item \label{req.1}  Requirement: \\
-	% 	At program start all safety related functions must be tested.  \\
-	% 	Folge Requirements: \ref{req.1.1} , \ref{req.1.2}  
-	% 	\begin{enumerate}[label*=\arabic*.]
-	% 		\item \label{req.1.1}  Requirement  \\
-	% 		At program start the LED indicating an error must be tested.\ref{req.2}\\ 
-	% 		\item \label{req.1.2} Requirement   \\
-	% 		At program start the USART sending error messages must be tested.\\ 
-	% 	\end{enumerate}
-	% 	\item \label{req.2} Requirement:   \\
-	% 	\item \label{req.3} Requirement:   
-	% \end{enumerate}
+ \begin{enumerate}[label*=\arabic*.]
+ 	\item \label{req.1}  Requirement: \\
+	 	At program start all safety related functions must be tested.  \\
+	 	Folge Requirements: \ref{req.1.1} , \ref{req.1.2}  
+	 	\begin{enumerate}[label*=\arabic*.]
+	 		\item \label{req.1.1}  Requirement  \\
+	 		At program start the LED indicating an error must be tested.\ref{req.2}\\ 
+	 		\item \label{req.1.2} Requirement   \\
+	 		At program start the USART sending error messages must be tested.\\ 
+	 	\end{enumerate}
+
+Das System soll innerhalb 1 sek auf einen Fehler in der Messung reagieren können indem es sich deaktiviert.
+
+Das System soll einen Ausfall der Sensoren selbstständig erkennen indem es die Messwerte auf Plausibilität überprüft.
+
+Das System soll bei einem erkannten Sensorausfall den Fahrer durch eine Rote LED-Anzeige am Display informieren.
+
+Das System soll sich bei einem erkannten Sensorausfall ausschalten.
+
+Das System soll einen Ausfall des Kommunikationssubsystems (Bluetooth) automatisch erkennen indem es erkennt, dass ein Paket nicht versandt werden konnte, oder indem es erkennt das nach einem erfolgreichen Senden keine Antwort innerhalb eines definierten Zeitraums (10ms) bekommt.
+
+Das System soll bei einem erkannten Kommunikationssubsystemausfall den Fahrer durch das einschalten einer Roten Warn-LED informieren.
+
+Das System soll sich bei einem erkannten Kommunikationssubsystems (Bluetooth) -Fehler automatisch ausschalten.
+
+Bei einem erkannten Ausfall des Kommunikationssubsystems (Bluetooth) soll das System einen Verbindungsaufbau starten.
+
+Das System soll den Fahrer über den Zustand des Systems informieren durch eine Grüne Status-LED und durch die ACC Push Button darstellung (ACC ON/ACC OFF).
+
+Das System soll sich nicht Aktivieren lassen wenn die Sensoren oder die Kommunikation ausgefallen sind.
+
+Das System soll sobald es aktiviert wird, die derzeitige geschwindigkeit des Fahrzeugs merken und nicht überschreiten.
+
+Das System soll sich bei einer Unterschreitung der Fahrzeuggeschwindigkeit von 30 km/h deaktivieren.
+
+Das System soll bei einem gemessenen Abstand von n Metern, die Geschwindigkeit auf n/2 km/h runterregeln.
+
+
+
+
+
+
+
+
+der Abstandsmessunbgen automatisch erkennen und innerhalb 
+
+        
+	 	\item \label{req.2} Requirement:   \\
+	 	\item \label{req.3} Requirement:   
+	 \end{enumerate}
 
 \subsection{Security related requirements}
 
