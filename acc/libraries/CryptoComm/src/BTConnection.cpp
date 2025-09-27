@@ -89,7 +89,7 @@ ssize_t BTConnection::receive(std::span<uint8_t> rxData) noexcept
     return ret;
 }
 
-ssize_t BTConnection::sendWithCounterAndMAC(uint8_t msgType, std::span<const uint8_t> txData) noexcept
+ssize_t BTConnection::sendWithCounterAndMAC(uint8_t msgType, std::span<const uint8_t> txData)
 {
     if (txData.size() > MAX_PAYLOAD_LEN)
     {
@@ -107,24 +107,26 @@ ssize_t BTConnection::sendWithCounterAndMAC(uint8_t msgType, std::span<const uin
     }
 
     ssize_t sentBytes = send({&msgBuf[0], protectedByteByHMAC + MAC_LEN});
-    if (sentBytes > 0)
+    if (sentBytes < 0)
     {
-        m_localCounter++;
+        // Throwing leaves the comm loop and will set up a new connection
+        throw runtime_error ("Failed to send data");
     }
 
+    m_localCounter++;
     return sentBytes;
 }
 
-ssize_t BTConnection::receiveWithCounterAndMAC(uint8_t &msgType, std::span<uint8_t> payload) noexcept
+ssize_t BTConnection::receiveWithCounterAndMAC(uint8_t &msgType, std::span<uint8_t> payload)
 {
     uint32_t overheadLength = TYPE_LEN + COUNTER_LEN + MAC_LEN;
     array<uint8_t, MAX_MSG_LEN> rxBuf;
     ssize_t rxMsgLen = receive(rxBuf);
 
-    // if (rxMsgLen < 0)
-    // {
-    //     return rxMsgLen;
-    // }
+    if (rxMsgLen < 0)
+    {
+        throw runtime_error ("Failed to receive data");
+    }
 
     if (rxMsgLen <= overheadLength)
     {
