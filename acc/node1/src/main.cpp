@@ -10,7 +10,7 @@ using namespace std;
 using namespace acc;
 
 // global var, written by the sensor thread, read by the communication thread
-volatile uint16_t gCurrentDistanceReading;
+volatile uint16_t gCurrentDistanceReading = 0xffff;
 
 void *sensorThread(void *arg)
 {
@@ -21,7 +21,6 @@ void *sensorThread(void *arg)
 
     // Initialize sensor
     Sensor sensor(18, 24);
-    uint8_t readingCounter = 0;
     
     // Sensor loop
     while (1)
@@ -32,9 +31,6 @@ void *sensorThread(void *arg)
 
         double d = sensor.getDistanceCm(); // we just assume everything is OK here...
         uint16_t nextReadingVal = static_cast<uint16_t>(d);
-        // most significant 12 bit: Reading value, least significant 4 bit: readingCounter;
-        nextReadingVal <<= 4;
-        nextReadingVal |= (readingCounter & 0x0f);
         
         // Critical section start, take care that no exception can be thrown in it!
         pthread_mutex_lock(pLock);
@@ -42,8 +38,11 @@ void *sensorThread(void *arg)
         pthread_mutex_unlock(pLock);
         // Critical section end
         
-        readingCounter++;
+        // Sleep 2.5ms
+        usleep(2'500);
     }
+
+    return nullptr; // Won't ever be reached
 }
 
 
@@ -63,7 +62,8 @@ static void commLoop(acc::BTListenSocket &listenSocket, pthread_mutex_t *pLock)
 
     while (1) // we leave this one only via failed send/receive operations
     {
-        ssize_t bytes_received = conn.receiveWithCounterAndMAC(msgType, rxBuf);
+        uint32_t counter = 0;
+        ssize_t bytes_received = conn.receiveWithCounterAndMAC(msgType, rxBuf, counter, false);
         if (bytes_received < 0)
         {
             numRxFails++;
@@ -71,13 +71,13 @@ static void commLoop(acc::BTListenSocket &listenSocket, pthread_mutex_t *pLock)
         else
         {
             numRxSuccess++;
-
+            uint8_t readingToTransmit[sizeof(gCurrentDistanceReading)];
             pthread_mutex_lock(pLock);
-            uint16_t readingToTransmit = gCurrentDistanceReading;
+            readingToTransmit[0] = gCurrentDistanceReading >> 8;
+            readingToTransmit[1] = gCurrentDistanceReading & 0xff;
             pthread_mutex_unlock(pLock);
 
-            // FIXME: Get rid of the reinterpret_cast
-            if (conn.sendWithCounterAndMAC(0x02, {reinterpret_cast<uint8_t const *>(&readingToTransmit), sizeof(readingToTransmit)}) < 0)
+            if (conn.sendWithCounterAndMAC(0x02, {readingToTransmit, sizeof(readingToTransmit)}, counter) < 0)
             {
                 numTxFails++;
             }
@@ -86,6 +86,9 @@ static void commLoop(acc::BTListenSocket &listenSocket, pthread_mutex_t *pLock)
                 numTxSuccess++;
             }
         }
+
+        // Sleep 2.5ms
+        usleep(2'500);
     }
 
     cout << "Tx Fails: " << numTxFails << ", Rx Fails: " << numRxFails << "\n";
@@ -94,6 +97,8 @@ static void commLoop(acc::BTListenSocket &listenSocket, pthread_mutex_t *pLock)
 
 int main()
 {
+    cout << "Node 1 started.\n";
+
     // mutex for setting up the critical section
     pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -131,6 +136,7 @@ int main()
     {
         cerr << "Runtime Exception: " << e.what() << '\n';
         perror("Error message: ");
+        return -1;
     }
     catch(...)
     {

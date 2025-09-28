@@ -10,137 +10,185 @@ using namespace std;
 using namespace acc;
 
 // Type definitions
-
-typedef void (*task_type) (union sigval);
-
-// Global variables
-static char const *BYE = "bye";
-static uint32_t gSuccessRxMsgs;
-static uint32_t gFailRxMsgs;
-static uint32_t gSuccessTxMsgs;
-static uint32_t gFailTxMsgs;
-
-static void task_5_ms(union sigval arg)
+enum class ACC_Status
 {
-    if (arg.sival_ptr != nullptr)
+    OFF,
+    ON,
+    ERROR
+};
+
+// constants
+constexpr uint8_t ERROR_COUNT_MAX = 4;
+
+// global var, written by the sensor thread, read by the communication thread
+volatile uint16_t gCurrentDistanceReading = 0xffff;
+
+static bool isValidDistance(uint16_t currentReading)
+{
+    // FIXME: Implement comparison of aging counters
+    return true;
+}
+
+static ACC_Status getACCStatusFromGUI()
+{
+    // FIXME: Implement this
+    return ACC_Status::ON;
+}
+
+static uint8_t getCurrentSpeedFromGUI()
+{
+    // FIXME: Implement this
+    return 42U;
+}
+
+static uint8_t accFunc(uint16_t currentDistance, uint8_t currentSpeed)
+{
+    // FIXME: Implement
+    return currentSpeed;
+}
+
+void *accThread(void *arg)
+{
+    pthread_mutex_t *pLock = reinterpret_cast<pthread_mutex_t *>(arg);
+    uint16_t lastSuccessfulReading = 0xffff;
+    uint8_t errorCount = 0;
+
+    while (1)
     {
-        array<uint8_t, MAX_MSG_LEN> msgBuf = { 0 };
-        BTConnection *conn = reinterpret_cast<BTConnection *>(arg.sival_ptr);
-        // just send a dummy byte
-        if (conn->sendWithCounterAndMAC(0x01, {&msgBuf[0], 1}) < 0)
+        // get the current speed from the GUI
+        uint8_t currentSpeed = getCurrentSpeedFromGUI();
+        // get the current status of the ACC from the GUI
+        ACC_Status acc_status = getACCStatusFromGUI();
+
+        uint16_t lastSuccessfulReadDistance = lastSuccessfulReading;
+
+        // Critical section start, take care that no exception can be thrown in it!
+        pthread_mutex_lock(pLock);
+        uint16_t currentReading = gCurrentDistanceReading;
+        pthread_mutex_unlock(pLock);
+        // Critical section end
+
+        if (isValidDistance(currentReading))
         {
-            gFailTxMsgs++;
+            lastSuccessfulReading = currentReading;
+            lastSuccessfulReadDistance = lastSuccessfulReading;
+            if (acc_status == ACC_Status::ERROR)
+            {
+                acc_status = ACC_Status::OFF;
+            }
         }
         else
         {
-            gSuccessTxMsgs++;
-            // wait for the response
-            uint8_t msgType;
-            if (conn->receiveWithCounterAndMAC(msgType, {&msgBuf[0], msgBuf.size()}) < 0)
+            errorCount = std::min(ERROR_COUNT_MAX, ++errorCount);
+        }
+
+        if (errorCount < ERROR_COUNT_MAX)
+        {
+            if (acc_status == ACC_Status::ON)
             {
-                gFailRxMsgs++;
-            }
-            else
-            {
-                gSuccessRxMsgs++;
+                currentSpeed = accFunc(lastSuccessfulReadDistance, currentSpeed);
             }
         }
+        else
+        {
+            acc_status = ACC_Status::ERROR;
+        }
+
+        // FIXME: Update GUI with acc_status, currentSpeed, lastSuccessfulReadDistance
+
+        // Sleep 5ms
+        usleep(5'000);        
     }
+
+    return nullptr;
 }
 
-// Cyclic task which 
-// - receives the proximity readings, 
-// - checks validity of readings
-// - calculates new motor speed
-// - activates an alarm, if required
-static timer_t setup_task(uint16_t period_ms, task_type task, void *task_arg)
+static void commLoop(char *remoteMAC, pthread_mutex_t *pLock)
 {
-    struct sigevent sev;
-    timer_t timerid;
-    struct itimerspec its;
+    // Set up a BT connection to node1
+    BTConnection conn(remoteMAC);
 
-    sev.sigev_notify = SIGEV_THREAD;
-    sev.sigev_notify_function = task;
-    sev.sigev_value.sival_ptr = task_arg;
-    sev.sigev_notify_attributes = nullptr;
+    // buffer for sending and receiving messages
+    array<uint8_t, MAX_MSG_LEN> msgBuf = { 0 };
 
-    timer_create(CLOCK_MONOTONIC, &sev, &timerid);
+    // counter for preventing replay attacks
+    uint32_t counter = 0;
+    
+    // Create session key
+    conn.keyExchangeClient();
 
-    its.it_value.tv_sec = 0;
-    its.it_value.tv_nsec = 1'000'000 * period_ms;
-    its.it_interval.tv_sec = 0;
-    its.it_interval.tv_nsec = 1'000'000 * period_ms;
+    while (1)
+    {
+        // just send a dummy byte
+        msgBuf[0] = 0;
+        if (conn.sendWithCounterAndMAC(0x01, {&msgBuf[0], 1}, counter) >= 0)
+        {
+            // If we fail to receive, we convey an error status
+            // FIXME: Define error codes for reading.
+            uint16_t receivedReading = 0xffff;
 
-    timer_settime(timerid, 0, &its, nullptr);
-    return timerid;
-}
+            // wait for the response
+            uint8_t msgType;
+            if (conn.receiveWithCounterAndMAC(msgType, {&msgBuf[0], msgBuf.size()}, counter, true) < 0)
+            {
+                if (msgType == 0x02)
+                {
+                    receivedReading = (msgBuf[0] << 8) + msgBuf[1];
+                }
+            }
 
-static void stop_timer(timer_t timerId)
-{
-    struct itimerspec its;
-    its.it_value.tv_sec = 0;
-    its.it_value.tv_nsec = 0;
-    its.it_interval.tv_sec = 0;
-    its.it_interval.tv_nsec = 0;
+            // Critical section start, take care that no exception can be thrown in it!
+            pthread_mutex_lock(pLock);
+            gCurrentDistanceReading = receivedReading;
+            pthread_mutex_unlock(pLock);
+            // Critical section end
+        }
 
-    timer_settime(timerId, 0, &its, NULL);
+        counter++;
+
+        // sleep for 5ms
+        usleep(5'000);
+    }
 }
 
 int main(int argc, char *argv[])
 {
-    try
+    cout << "Node 2 started.\n";
+
+    // mutex for setting up the critical section
+    pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
+    // Start ACC thread
+    pthread_t thread;
+    if (pthread_create(&thread, NULL, accThread, &lock)) 
     {
-        if (argc != 2)
-        {
-            cerr << "Usage: " << argv[0] << "<MAC_ADDR_NODE1>\n";
-            return -1;
-        }
+        cerr << "Error creating thread\n";
+        return 1;
+    }    
 
-        cout << "Hello, I am node2.\n";
-
-        // Set up a BT connection to node1
-        BTConnection conn(argv[1]);
-
-        conn.keyExchangeClient();
-        gSuccessRxMsgs = 0;
-        gFailRxMsgs = 0;
-        gSuccessTxMsgs = 0;
-        gFailTxMsgs = 0;
-#if 1
-        // Activate our 5ms task
-        timer_t timerId = setup_task(5, task_5_ms, &conn);
-
-        sleep(10); // let the task run for 10 secs, ~2000 times
-        stop_timer(timerId);
-        sleep(1); // be sure the timer does not fire any more
-#else
-        // for debugging
-        union sigval arg;
-        arg.sival_ptr = &conn;
-        for (uint32_t idx = 0; idx < 200; idx++)
-        {
-            task_5_ms(arg);
-            usleep(5000);
-        }
-#endif
-
-        // send the end token to inform the server we are done
-        std::span<const uint8_t> byeSpan(reinterpret_cast<uint8_t const *>(BYE), strlen(BYE) + 1);
-        conn.sendWithCounterAndMAC(0x03, byeSpan);
-        cout << "Received " << gSuccessRxMsgs << " readings successfully, failed " << gFailRxMsgs << " rx messages\n";
-        cout << "Sent " << gSuccessTxMsgs << " messages successfully, failed " << gFailTxMsgs << " tx messages\n";
-    }
-    catch(const runtime_error &e)
+    if (argc != 2)
     {
-        cerr << "Runtime Exception: " << e.what() << '\n';
-        perror("Error message: ");
-        return -1;
-    }
-    catch(...)
-    {
-        cerr << "Unknown exception occurred.\n";
+        cerr << "Usage: " << argv[0] << "<MAC_ADDR_NODE1>\n";
         return -1;
     }
 
+    while (1)
+    {
+        try
+        {
+            commLoop(argv[0], &lock);        
+        }
+        catch(const runtime_error &e)
+        {
+            cerr << "Runtime Exception: " << e.what() << '\n';
+            perror("Error message: ");
+        }
+        catch(...)
+        {
+            cerr << "Unknown exception occurred.\n";
+        }
+    }
+
+    // Will never be reached
     return 0;
 }
