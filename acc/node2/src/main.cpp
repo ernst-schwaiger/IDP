@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
         cerr << "Usage: " << argv[0] << "<MAC_ADDR_NODE1>\n";
         return -1;
     }
-
+// hier funktion einfügen
     while (1)
     {
         try
