@@ -4,8 +4,25 @@ Adaptive cruise control project
 
 Prerequisites:
 ```bash
-sudo apt install -y g++ cmake make gcovr pkg-config libbluetooth-dev bluez libglib2.0-dev
+sudo apt update && sudo apt install -y \
+    g++ \
+    cmake \
+    make \
+    gcovr \
+    pkg-config \
+    libbluetooth-dev \
+    bluez \
+    libglib2.0-dev \
+    qt6-base-dev \
+    qt6-tools-dev \
+    qtcreator \
+    qt6-wayland-dev
 ```
+
+running qt creator on WSL: Set environment variable to tell qt to use X11 instead of
+(default) wayland before execution `QT_QPA_PLATFORM=xcb qtcreator`.
+
+
 
 for building the documentation:
 ```bash
@@ -17,21 +34,21 @@ sudo apt install -y texlive latexmk texlive-latex-extra
 In order for cmake to find libtommath in the acc project, check it out and build it in a local folder
 
 ```bash
-git clone https://github.com/libtom/libtommath.git
-cd libtommath
-mkdir -p build
-cd build
-cmake ..
+git clone https://github.com/libtom/libtommath.git && \
+cd libtommath && \
+mkdir -p build && \
+cd build && \
+cmake .. && \
 make -sj
 ```
 
 Build the `node1`, `node2` release binaries as `acc/build/node1/node1` and `acc/build/node2/node2`:
 ```bash
-cd acc
-mkdir release
-cd release
-cmake -DCMAKE_BUILD_TYPE=Release ..
-make -j
+cd acc && \
+mkdir -p release && \
+cd release && \
+cmake -DCMAKE_BUILD_TYPE=Release .. && \
+make -sj
 ```
 
 ## Run the Application
@@ -49,10 +66,10 @@ make -j
 ## Unit Test and Coverage
 Build the binaries in `acc/debug`:
 ```
-cd acc
-mkdir debug
-cd debug
-cmake -DCMAKE_BUILD_TYPE=Debug ..
+cd acc && \
+mkdir debug && \
+cd debug && \
+cmake -DCMAKE_BUILD_TYPE=Debug .. && \
 make -j
 ```
 
@@ -60,9 +77,9 @@ make -j
 Either `ctest --output-on-failure` or run a test binary, e.g. `./libraries/bluetooth/bluetooth_test`.
 ### Generate Coverage Report
 ```
-make coverage
+cmake --build . --target coverage
 ```
-generates a `Peer/debug/coverage.html` indicating covered/not covered parts of the code.
+in a debug/release folder generates a `./libraries/CryptoComm/coverage.html` indicating covered/not covered parts of the code.
 
 ## Develop on remote node using local VS Code
 
@@ -90,7 +107,6 @@ See also:
 - fix coverage
 - implement async send/receive in BT sockets.
 - implement async reading of proximity sensors
-- remove reinterpret_casts
 
 ## Open Topics
 - Intro to project structure: CMake, LaTeX, VS Code plugins. Howto build, howto debug

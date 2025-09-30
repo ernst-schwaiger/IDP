@@ -49,8 +49,8 @@ double Sensor::getDistanceCm()
     uint32_t diff = end - start; 
     return (diff * 0.0343) / 2.0; 
 #else
-    // No sensor available, send pi * 10
-    return 31.415926;
+    // No sensor available, send pi * 100
+    return 314.15926;
 #endif
 }
 

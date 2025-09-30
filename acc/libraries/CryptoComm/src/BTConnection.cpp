@@ -11,8 +11,6 @@ namespace acc
 {
 BTConnection::BTConnection(BTListenSocket *pListenSocket) : 
     m_cryptoWrapper{},
-    m_localCounter { 0 },
-    m_remoteCounter { 0 },
     m_remote_addr{ AF_BLUETOOTH, htobs(0x1001), { 0 }, 0, 0 }
 {
     socklen_t socklen = sizeof(m_remote_addr);
@@ -26,8 +24,6 @@ BTConnection::BTConnection(BTListenSocket *pListenSocket) :
 
 BTConnection::BTConnection(char const *remoteMAC) : 
     m_cryptoWrapper{},
-    m_localCounter { 0 },
-    m_remoteCounter { 0 },
     m_remote_addr{ AF_BLUETOOTH, htobs(0x1001), { 0 }, 0, 0 }
 {
     m_socket = socket(AF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_L2CAP);
@@ -89,7 +85,7 @@ ssize_t BTConnection::receive(std::span<uint8_t> rxData) noexcept
     return ret;
 }
 
-ssize_t BTConnection::sendWithCounterAndMAC(uint8_t msgType, std::span<const uint8_t> txData) noexcept
+ssize_t BTConnection::sendWithCounterAndMAC(uint8_t msgType, std::span<const uint8_t> txData, uint32_t counter)
 {
     if (txData.size() > MAX_PAYLOAD_LEN)
     {
@@ -98,7 +94,7 @@ ssize_t BTConnection::sendWithCounterAndMAC(uint8_t msgType, std::span<const uin
 
     array<uint8_t, MAX_MSG_LEN> msgBuf;
     msgBuf[0] = msgType;
-    serializeUint32(&msgBuf[1], m_localCounter);
+    serializeUint32(&msgBuf[1], counter);
     std::copy(&txData[0], &txData[txData.size()], &msgBuf[5]);
     uint32_t protectedByteByHMAC = TYPE_LEN + COUNTER_LEN + txData.size();
     if (m_cryptoWrapper.generateHMAC({&msgBuf[0], protectedByteByHMAC}, {&msgBuf[protectedByteByHMAC], MAC_LEN}) != 0)
@@ -107,24 +103,25 @@ ssize_t BTConnection::sendWithCounterAndMAC(uint8_t msgType, std::span<const uin
     }
 
     ssize_t sentBytes = send({&msgBuf[0], protectedByteByHMAC + MAC_LEN});
-    if (sentBytes > 0)
+    if (sentBytes < 0)
     {
-        m_localCounter++;
+        // Throwing leaves the comm loop and will set up a new connection
+        throw runtime_error ("Failed to send data");
     }
 
     return sentBytes;
 }
 
-ssize_t BTConnection::receiveWithCounterAndMAC(uint8_t &msgType, std::span<uint8_t> payload) noexcept
+ssize_t BTConnection::receiveWithCounterAndMAC(uint8_t &msgType, std::span<uint8_t> payload, uint32_t &counter, bool verifyCounter)
 {
     uint32_t overheadLength = TYPE_LEN + COUNTER_LEN + MAC_LEN;
     array<uint8_t, MAX_MSG_LEN> rxBuf;
     ssize_t rxMsgLen = receive(rxBuf);
 
-    // if (rxMsgLen < 0)
-    // {
-    //     return rxMsgLen;
-    // }
+    if (rxMsgLen < 0)
+    {
+        throw runtime_error ("Failed to receive data");
+    }
 
     if (rxMsgLen <= overheadLength)
     {
@@ -139,13 +136,21 @@ ssize_t BTConnection::receiveWithCounterAndMAC(uint8_t &msgType, std::span<uint8
     }
 
     uint32_t remoteCounter = deSerializeUint32(&rxBuf[1]);
-    // accept higher counters, but not lower ones, prevents replay attacks
-    if (m_remoteCounter > remoteCounter)
-    {
-        return -1; // unexpected message counter.
-    }
 
-    m_remoteCounter = remoteCounter + 1;
+    if (verifyCounter)
+    {
+        // if the counter value must be verified (at Node 2), only messages 
+        // with identical counter are accepted
+        if (counter != remoteCounter)
+        {
+            return -1;
+        }
+    }
+    else
+    {
+        // if the counter must only be read (Node 1), we return it as an out param
+        counter = remoteCounter;
+    }
 
     if (m_cryptoWrapper.verifyHMAC({&rxBuf[0], static_cast<uint32_t>(rxMsgLen) - MAC_LEN}, 
         {&rxBuf[rxMsgLen - MAC_LEN], MAC_LEN}) != 0)

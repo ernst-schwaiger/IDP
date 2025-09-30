@@ -4,6 +4,7 @@
 #include "CryptoWrapper.h"
 #include <span>
 #include <cstdint>
+#include <stdexcept>
 
 namespace acc
 {
@@ -30,8 +31,8 @@ public:
     ssize_t send(std::span<const uint8_t> txData) noexcept;
     ssize_t receive(std::span<uint8_t> rxData) noexcept;
 
-    ssize_t sendWithCounterAndMAC(uint8_t msgType, std::span<const uint8_t> txData) noexcept;
-    ssize_t receiveWithCounterAndMAC(uint8_t &msgType, std::span<uint8_t> payload) noexcept;
+    ssize_t sendWithCounterAndMAC(uint8_t msgType, std::span<const uint8_t> txData, uint32_t counter);
+    ssize_t receiveWithCounterAndMAC(uint8_t &msgType, std::span<uint8_t> payload, uint32_t &counter, bool verifyCounter);
 
 private:
 
@@ -39,8 +40,6 @@ private:
     uint32_t deSerializeUint32(uint8_t const *pBuf) const;
 
     CryptoWrapper m_cryptoWrapper;
-    uint32_t m_localCounter;
-    uint32_t m_remoteCounter;
     int m_socket;
     struct sockaddr_l2 m_remote_addr;
 };
