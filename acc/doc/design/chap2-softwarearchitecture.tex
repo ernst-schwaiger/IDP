@@ -42,9 +42,59 @@ Definition of priorities.
 
 \subsection{Pinout}
 
+In this subsection, the pinouts are presented separately for Node 1 and Node 2. Since both Nodes are based on a Raspberry Pi, the following diagram \ref{fig:raspi} shows the general pinout configuration of the Raspberry Pi.
+
+\begin{figure}[h]
+	\includegraphics[height=50mm]{acc/doc/design/images/GPIO-Pinout-Diagram-2.png}
+	\centering
+	\caption{Raspberry Pi pinout configuration from \href{https://prilchen.de/raspberry-pis-gpio-ein-tor-zu-unzaehligen-projekten/} {prilchen.de}}
+	\label{fig:raspi}
+\end{figure}
+
+\subsubsection{Node 1}
+
+For Node 1, the ultrasonic sensor (HC-SR04) is connected to the Raspberry Pi. The VCC pin of the sensor is connected to the 5V power pin, while GND is connected to ground. The TRIG pin is wired to GPIO 23, and the ECHO pin is connected to GPIO 24 through a voltage divider using two resistors ($R_1 = 330\,\Omega$ and $R_2 = 470\,\Omega$) to safely reduce the signal from 5V to 3.3V. This can be viewed in Figure \ref{fig:node1-pinout}
+
+
+\begin{figure}[h]
+	\includegraphics[height=50mm]{acc/doc/design/images/pinout_node1.png}
+	\centering
+	\caption{Pinout Node 1}
+	\label{fig:node1-pinout}
+\end{figure}
+
+\subsubsection{Node 2}
+
+For Node 2, the Raspberry Pi 4 is connected to the Raspberry Pi 7-inch Touch Display.  
+The flat DSI ribbon cable is used to transmit the video signal and touch interface, while the four jumper wires provide power and enable I²C communication between the Raspberry Pi and the display controller. The wiring is as follows:
+
+\begin{itemize}
+    \item The \textbf{5V pin} of the display (marked ``5V'') is connected to the \textbf{5V power pin} of the Raspberry Pi (pin~4 on the GPIO header) \emph{(red cable)}.
+    \item The \textbf{GND pin} of the display (marked ``GND'') is connected to the \textbf{ground pin} of the Raspberry Pi (pin~6 on the GPIO header) \emph{(black cable)}.
+    \item The \textbf{SCL pin} of the display is connected to the \textbf{SCL pin} of the Raspberry Pi (pin~5 / GPIO~3) \emph{(yellow cable)}.
+    \item The \textbf{SDA pin} of the display is connected to the \textbf{SDA pin} of the Raspberry Pi (pin~3 / GPIO~2) \emph{(green cable)}.
+\end{itemize}
+
+The wiring can be seen in Figure \ref{fig:node2-raspy} and \ref{fig:node2-display}.
+
+\begin{figure}[h]
+	\includegraphics[height=100mm]{acc/doc/design/images/node2-raspy.jpg}
+	\centering
+	\caption{Pinout Node 2 Raspberry Pi}
+	\label{fig:node2-raspy}
+\end{figure}
+
+\begin{figure}[h]
+	\includegraphics[height=100mm]{acc/doc/design/images/node2-display.jpg}
+	\centering
+	\caption{Pinout Node 2 Display}
+	\label{fig:node2-display}
+\end{figure}
+
+\clearpage
 \subsection{GUI}
 
-\ref{fig:gui} shows the dashboard GUI, containing the controls for accelerating and decelerating the vehicle, and for activating adaptive cruise control. It also contains elements showing the vehicles current speed, the distance to the nearest object in front of the car, and the status of the ACC system.
+Figure \ref{fig:gui} shows the dashboard GUI, containing the controls for accelerating and decelerating the vehicle, and for activating adaptive cruise control. It also contains elements showing the vehicles current speed, the distance to the nearest object in front of the car, and the status of the ACC system.
 
 \begin{figure}[h]
 	\includegraphics[height=50mm]{images/GUI.png}
@@ -55,7 +105,7 @@ Definition of priorities.
 
 \begin{enumerate}
   \item ACC Status LED: Shows the status of the ACC system, green if it is in an operational state, red, if ACC  is in a failed state.
-  \item ACC Button: Push Button to activate ACC. Can only be pushed if ACC is in operational state and not turned on already.
+  \item ACC Button: Push Button to activate ACC. Can only be pushed if ACC is in operational state.
   \item Accelerate Button: Increases the vehicle speed by 5 km/h (up to 200 km/h), deactivates ACC, if it was active.
   \item Decelerate Button: Decreases the vehicle speed by 5 km/h (down to 0 km/h), deactivates ACC, if it was active.
   \item Speed Display: Shows current vehicle speed
@@ -64,7 +114,7 @@ Definition of priorities.
 
 \subsection{Communication}
 
-\paragraph{} Immediately after the communication is set up, Node 1 and Node 2 exchange 32 byte random numbers. These two numbers and a 32 byte pre-shared key are concatenated and put into a key derivation function returning a 256 bit AES session key used for HMAC generation. The message layout for these messages is shown in the first message in \ref{fig:msg}.
+\paragraph{} Immediately after the communication is set up, Node 1 and Node 2 exchange 32 byte random numbers. These two numbers and a 32 byte pre-shared key are concatenated and put into a key derivation function returning a 256 bit AES session key used for HMAC generation. The message layout for these messages is shown in the first message in Figure \ref{fig:msg}.
 
 \paragraph{}The messages which Node 1 and Node 2 are exchanging contain two fields:
 \begin{itemize}
@@ -74,7 +124,7 @@ Definition of priorities.
 
 FIXME: After key establishment, we should use a challenge-response round, so each participant proves to the other it owns the PSK. If that does not work on both sides, the connection should be dropped.
 
-\paragraph{} After the common session key is established, the application uses a client server communication pattern, Node 1 acting as server and Node 2 acting as client. Node 2 periodically sends request messages to Node 1 which sends response messages. The message layout looks like depicted in the second and third messages in \ref{fig:msg}. All multi byte fields are encoded as big-endian/in network byte order, i.e. the first byte of a field contains the MSB.
+\paragraph{} After the common session key is established, the application uses a client server communication pattern, Node 1 acting as server and Node 2 acting as client. Node 2 periodically sends request messages to Node 1 which sends response messages. The message layout looks like depicted in the second and third messages in Figure \ref{fig:msg}. All multi byte fields are encoded as big-endian/in network byte order, i.e. the first byte of a field contains the MSB.
 
 \paragraph{} All messages have the following layout:
 \begin{itemize}
