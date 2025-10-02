@@ -1,8 +1,4 @@
 #pragma once
-#include <pigpio.h>
-
-// comment this out if no sensort are mounted to node 1
-#define PROXIMITY_SENSORS_MOUNTED
 
 namespace acc
 {

@@ -4,6 +4,15 @@
 #include <iostream>
 #include <stdexcept>
 
+// comment this out if no sensort are mounted to node 1
+#define PROXIMITY_SENSORS_MOUNTED
+
+#ifdef PROXIMITY_SENSORS_MOUNTED
+#include <pigpio.h>
+#else
+#include <cmath>
+#endif
+
 using namespace std;
 
 namespace acc
@@ -30,7 +39,9 @@ Sensor::Sensor(int trigPin, int echoPin) : trigPin(trigPin), echoPin(echoPin)
 
 Sensor::~Sensor()
 {
+#ifdef PROXIMITY_SENSORS_MOUNTED    
     gpioTerminate();
+#endif
 }
 
 double Sensor::getDistanceCm() 
@@ -49,8 +60,11 @@ double Sensor::getDistanceCm()
     uint32_t diff = end - start; 
     return (diff * 0.0343) / 2.0; 
 #else
-    // No sensor available, send pi * 100
-    return 314.15926;
+    // No sensor available, send test values
+    static double i = 0.0;
+    double val = fabs(314 * sin(i));
+    i += 0.1;
+    return val;
 #endif
 }
 

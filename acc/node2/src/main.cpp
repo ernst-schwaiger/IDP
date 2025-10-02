@@ -18,15 +18,31 @@ enum class ACC_Status
 };
 
 // constants
-constexpr uint8_t ERROR_COUNT_MAX = 4;
+constexpr uint8_t ERROR_COUNT_MAX = 4U;
+constexpr uint16_t VEHICLE_SPEED_MAX = 200U;
 
-// global var, written by the sensor thread, read by the communication thread
+// global var, written by the sensor thread, shall only be accessed via get/set functions
 volatile uint16_t gCurrentDistanceReading = 0xffff;
+
+uint16_t getCurrentDistanceReading(pthread_mutex_t *pLock)
+{
+    pthread_mutex_lock(pLock);
+    uint16_t currentReading = gCurrentDistanceReading;
+    pthread_mutex_unlock(pLock);
+    return currentReading;
+}
+
+void setCurrentDistanceReading(pthread_mutex_t *pLock, uint16_t value)
+{
+    pthread_mutex_lock(pLock);
+    gCurrentDistanceReading = value;
+    pthread_mutex_unlock(pLock);
+}
+
 
 static bool isValidDistance(uint16_t currentReading)
 {
-    // FIXME: Implement comparison of aging counters
-    return true;
+    return (currentReading <= VEHICLE_SPEED_MAX);
 }
 
 static ACC_Status getACCStatusFromGUI()
@@ -43,11 +59,17 @@ static uint8_t getCurrentSpeedFromGUI()
 
 static uint8_t accFunc(uint16_t currentDistance, uint8_t currentSpeed)
 {
-    // FIXME: Implement
+    // FIXME: Also take the set speed of the ACC into account here!
+    // "Halber Tacho"
+    uint16_t targetSpeed = currentDistance / 2;
+    int speedDifference = currentSpeed - targetSpeed;
+    // We assume that in each iteration, we cover 10% of the difference current speed / target speed.
+    int appliedSpeedDelta = speedDifference / 10;
+    currentSpeed = static_cast<uint16_t>(currentSpeed + appliedSpeedDelta);
     return currentSpeed;
 }
 
-void *accThread(void *arg)
+static void *accThread(void *arg)
 {
     pthread_mutex_t *pLock = reinterpret_cast<pthread_mutex_t *>(arg);
     uint16_t lastSuccessfulReading = 0xffff;
@@ -60,18 +82,11 @@ void *accThread(void *arg)
         // get the current status of the ACC from the GUI
         ACC_Status acc_status = getACCStatusFromGUI();
 
-        uint16_t lastSuccessfulReadDistance = lastSuccessfulReading;
-
-        // Critical section start, take care that no exception can be thrown in it!
-        pthread_mutex_lock(pLock);
-        uint16_t currentReading = gCurrentDistanceReading;
-        pthread_mutex_unlock(pLock);
-        // Critical section end
+        uint16_t currentReading = getCurrentDistanceReading(pLock);
 
         if (isValidDistance(currentReading))
         {
             lastSuccessfulReading = currentReading;
-            lastSuccessfulReadDistance = lastSuccessfulReading;
             if (acc_status == ACC_Status::ERROR)
             {
                 acc_status = ACC_Status::OFF;
@@ -82,11 +97,11 @@ void *accThread(void *arg)
             errorCount = std::min(ERROR_COUNT_MAX, ++errorCount);
         }
 
-        if (errorCount < ERROR_COUNT_MAX)
+        if ((errorCount < ERROR_COUNT_MAX) && isValidDistance(lastSuccessfulReading))
         {
             if (acc_status == ACC_Status::ON)
             {
-                currentSpeed = accFunc(lastSuccessfulReadDistance, currentSpeed);
+                currentSpeed = accFunc(lastSuccessfulReading, currentSpeed);
             }
         }
         else
@@ -100,6 +115,23 @@ void *accThread(void *arg)
         usleep(5'000);        
     }
 
+    return nullptr;
+}
+
+static void *guiThread(void *arg)
+{
+    // MUTEX for accessing the current distance reading via getCurrentDistanceReading(). 
+    pthread_mutex_t *pLock = reinterpret_cast<pthread_mutex_t *>(arg);
+
+    // FIXME: Add one-time GUI init code here
+
+    while (1)
+    {
+        // FIXME: Add GUI event loop here.
+        usleep(1'000'000);
+    }
+
+    // won't ever be reached.
     return nullptr;
 }
 
@@ -137,11 +169,8 @@ static void commLoop(char *remoteMAC, pthread_mutex_t *pLock)
                 }
             }
 
-            // Critical section start, take care that no exception can be thrown in it!
-            pthread_mutex_lock(pLock);
-            gCurrentDistanceReading = receivedReading;
-            pthread_mutex_unlock(pLock);
-            // Critical section end
+            // Update current distance reading in a critical section
+            setCurrentDistanceReading(pLock, receivedReading);
         }
 
         counter++;
@@ -153,25 +182,33 @@ static void commLoop(char *remoteMAC, pthread_mutex_t *pLock)
 
 int main(int argc, char *argv[])
 {
+    if (argc != 2)
+    {
+        cerr << "Usage: " << argv[0] << "<MAC_ADDR_NODE1>\n";
+        return -1;
+    }
+
     cout << "Node 2 started.\n";
 
     // mutex for setting up the critical section
     pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
     // Start ACC thread
-    pthread_t thread;
-    if (pthread_create(&thread, NULL, accThread, &lock)) 
+    pthread_t accThreadHandle;
+    if (pthread_create(&accThreadHandle, NULL, accThread, &lock)) 
     {
-        cerr << "Error creating thread\n";
+        cerr << "Error creating acc thread\n";
         return 1;
     }    
 
-    if (argc != 2)
+    // Start GUI thread
+    pthread_t guiThreadHandle;
+    if (pthread_create(&guiThreadHandle, NULL, guiThread, &lock)) 
     {
-        cerr << "Usage: " << argv[0] << "<MAC_ADDR_NODE1>\n";
-        return -1;
-    }
-// hier funktion einfügen
+        cerr << "Error creating acc thread\n";
+        return 1;
+    }    
+
     while (1)
     {
         try

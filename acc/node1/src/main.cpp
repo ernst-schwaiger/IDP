@@ -1,7 +1,9 @@
 #include <iostream>
 #include <stdexcept>
+#include <cmath>
 #include <time.h>
 #include <unistd.h>
+
 #include "Sensor.h"
 
 #include <CryptoComm.h>
@@ -30,7 +32,7 @@ void *sensorThread(void *arg)
         // Do plausibility checks, compare values, determine output
 
         double d = sensor.getDistanceCm(); // we just assume everything is OK here...
-        uint16_t nextReadingVal = static_cast<uint16_t>(d);
+        uint16_t nextReadingVal = static_cast<uint16_t>(floor(d));
         
         // Critical section start, take care that no exception can be thrown in it!
         pthread_mutex_lock(pLock);
