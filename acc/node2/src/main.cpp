@@ -140,6 +140,9 @@ static void commLoop(char *remoteMAC, pthread_mutex_t *pLock)
     // Set up a BT connection to node1
     BTConnection conn(remoteMAC);
 
+    // At this point, we have a connection set up
+    cout << "Connection to " << remoteMAC << " established.\n";
+
     // buffer for sending and receiving messages
     array<uint8_t, MAX_MSG_LEN> msgBuf = { 0 };
 
@@ -213,7 +216,7 @@ int main(int argc, char *argv[])
     {
         try
         {
-            commLoop(argv[0], &lock);        
+            commLoop(argv[1], &lock);        
         }
         catch(const runtime_error &e)
         {

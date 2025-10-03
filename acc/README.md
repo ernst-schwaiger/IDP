@@ -53,6 +53,53 @@ make -sj
 
 ## Run the Application
 
+
+### Troubleshooting Bluetooth Device
+
+Depending on the used operating system, the Bluetooth device may be powered on or off, or may even be blocked from powering on via software. Whether or not an upfront pairing is required also depends on the installed operating system.
+
+#### Unblock Bluetooth Device from Power On
+
+In a shell, run `rfkill list`. If the output indicates "Soft blocked: yes" for the Bluetooth device, it can be unblocked via `sudo rfkill unblock bluetooth`. (Required in Raspbian OS 13 "Trixie").
+
+#### Software Power-On Bluetooth Device
+
+A powered-off Bluetooth device can be detected via
+```bash
+bluetoothctl show | grep -i "power"
+Powered: no
+PowerState: off
+SupportedIncludes: tx-power
+```
+Its power can be turned on by 
+```bash
+bluetoothctl power on
+...
+bluetoothctl show | grep -i "power"
+Powered: yes
+PowerState: on
+SupportedIncludes: tx-power
+```
+
+#### Upfront Pairing
+
+Raspbian-based OSes (at least: Trixie and Bookworm) require an upfront pairing of the client (Node 2) towards the server (Node 1). On current Ubuntu based OSes, no upfront pairing is required.
+
+Pairing can be done by running `bluetoothctl` on both nodes in parallel:
+- Start `bluetoothctl` on Node 1
+- Start `bluetoothctl` on Node 2
+- On both Nodes, do
+    - power on
+    - agent on
+- On Node 1 do
+    - discoverable yes
+- On Node 2 do
+    - pair XX:XX:XX:XX:XX:XX (Bluetooth MAC Address of Node 1)
+    - trust XX:XX:XX:XX:XX:XX (Bluetooth MAC Address of Node 1)
+- On Node 1, a prompt shows up whether the MAC of Node 1 can be trusted -> yes
+
+Both bluetooth devices are now paired.
+
 ### Node1
 
 - run `bluetoothctl show`, write down the MAC address
