@@ -141,7 +141,7 @@ ssize_t BTConnection::receiveWithCounterAndMAC(uint8_t &msgType, std::span<uint8
     {
         // if the counter value must be verified (at Node 2), only messages 
         // with identical counter are accepted
-        if (counter != remoteCounter)
+        if (counter >= remoteCounter)
         {
             return -1;
         }

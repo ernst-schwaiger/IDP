@@ -19,25 +19,26 @@ enum class ACC_Status
 
 typedef struct 
 {
-    uint32_t timestamp;
+    uint64_t timestamp;
     uint16_t distance;
 } DistanceReadingType;
 
 // constants
 constexpr uint8_t ERROR_COUNT_MAX = 4U;
 constexpr uint16_t VEHICLE_SPEED_MAX = 200U;
+constexpr uint16_t DISTANCE_READING_ERROR_1 = 65534U;
+constexpr uint16_t DISTANCE_READING_ERROR_2 = 65535U;
 
 // global var, written by the sensor thread, shall only be accessed via get/set functions
 volatile DistanceReadingType gCurrentDistanceReading = { 0U, 0xffff };
 
-static unsigned long getTimestampMs()
+static uint64_t getTimestampMs()
 {
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
 
-    long ms = ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
-    printf("Current time in ms: %ld\n", ms);
-    return 0;
+    uint64_t ms = ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+    return ms;
 }
 
 void getCurrentDistanceReading(pthread_mutex_t *pLock, DistanceReadingType *pReading)
@@ -48,7 +49,7 @@ void getCurrentDistanceReading(pthread_mutex_t *pLock, DistanceReadingType *pRea
     pthread_mutex_unlock(pLock);
 }
 
-void setCurrentDistanceReading(pthread_mutex_t *pLock, uint16_t distance, uint32_t timestamp)
+void setCurrentDistanceReading(pthread_mutex_t *pLock, uint16_t distance, uint64_t timestamp)
 {
     pthread_mutex_lock(pLock);
     gCurrentDistanceReading.distance = distance;
@@ -58,7 +59,7 @@ void setCurrentDistanceReading(pthread_mutex_t *pLock, uint16_t distance, uint32
 
 static bool isValidDistance(uint16_t currentReading)
 {
-    return (currentReading <= VEHICLE_SPEED_MAX);
+    return (currentReading < DISTANCE_READING_ERROR_1);
 }
 
 static ACC_Status getACCStatusFromGUI()
@@ -78,7 +79,7 @@ static uint8_t accFunc(uint16_t currentDistance, uint8_t currentSpeed)
     // FIXME: Also take the set speed of the ACC into account here!
     // "Halber Tacho"
     uint16_t targetSpeed = currentDistance / 2;
-    int speedDifference = currentSpeed - targetSpeed;
+    int speedDifference = targetSpeed - currentSpeed;
     // We assume that in each iteration, we cover 10% of the difference current speed / target speed.
     int appliedSpeedDelta = speedDifference / 10;
     currentSpeed = static_cast<uint16_t>(currentSpeed + appliedSpeedDelta);
@@ -122,6 +123,9 @@ static void *accThread(void *arg)
             {
                 currentSpeed = accFunc(latestValidDistanceReading.distance, currentSpeed);
             }
+            
+            // Comment in for debugging.
+            //cout << "Distance: " << latestValidDistanceReading.distance << ", TS: " << latestValidDistanceReading.timestamp << "\n";   
         }
 
         // FIXME: Update GUI with acc_status, currentSpeed, lastSuccessfulReadDistance
@@ -171,13 +175,14 @@ static void commLoop(char *remoteMAC, pthread_mutex_t *pLock)
         // buffer for sending and receiving messages
         array<uint8_t, MAX_MSG_LEN> msgBuf = { 0 };
         // message reception (blocking)
-        if (conn.receiveWithCounterAndMAC(msgType, {&msgBuf[0], msgBuf.size()}, counter, true) < 0)
+        if (conn.receiveWithCounterAndMAC(msgType, {&msgBuf[0], msgBuf.size()}, counter, true) >= 0)
         {
             if (msgType == 0x02)
             {
                 uint16_t receivedReading = (msgBuf[0] << 8) + msgBuf[1];
                 // Update current distance reading in a critical section, together with the measured timestamp
-                setCurrentDistanceReading(pLock, receivedReading, getTimestampMs());        
+                uint64_t timestampMs = getTimestampMs();
+                setCurrentDistanceReading(pLock, receivedReading, timestampMs);     
             }
         }
 
