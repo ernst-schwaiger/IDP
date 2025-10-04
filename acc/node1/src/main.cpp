@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include <cmath>
 #include <time.h>
+#include <assert.h>
 #include <unistd.h>
 
 #include "Sensor.h"
@@ -14,19 +15,19 @@ using namespace acc;
 // global var, written by the sensor thread, read by the communication thread
 volatile uint16_t gCurrentDistanceReading = 0xffff;
 
-static unsigned long getTimestampMs()
+static uint64_t getTimestampMs()
 {
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
 
-    long ms = ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
-    printf("Current time in ms: %ld\n", ms);
-    return 0;
+    uint64_t ms = ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+    return ms;
 }
 
-static uint32_t getTimestampMsSinceBaseline(long baselineMs)
+static uint32_t getTimestampMsSinceBaseline(uint64_t baselineMs)
 {
-    long currentTimeMs = getTimestampMs();
+    uint64_t currentTimeMs = getTimestampMs();
+    assert(currentTimeMs >= baselineMs);
     return static_cast<uint32_t>(currentTimeMs - baselineMs);
 }
 
@@ -68,8 +69,8 @@ static void *sensorThread(void *arg)
         // Critical section start, take care that no exception can be thrown in it!
         setCurrentDistanceReading(pLock, nextReadingVal);
         
-        // Sleep 2.5ms
-        usleep(2'500);
+        // Sleep 50ms
+        usleep(50'000);
     }
 
     return nullptr; // Won't ever be reached
