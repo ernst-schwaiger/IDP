@@ -13,6 +13,9 @@
 *.toc
 *.fls
 
+# Backup files
+*.bak
+
 # drawio backup files
 *.bkp
 

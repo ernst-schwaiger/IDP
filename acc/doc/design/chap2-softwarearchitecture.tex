@@ -3,42 +3,68 @@
 
 \paragraph
 {}
-	%If the acc is turned on, a 5ms task on Node 2 periodically requests distance readings from Node 1. Out of the readings it derives the new speed of the car. In alarm situations, e.g. failed readings, an object gets too close, no bt communication available, ... the acc turns off and alarms the driver to take over.
-When the ACC is activated, Node 2 executes a periodic task every 5 ms to request distance measurements from Node 1. Based on these readings, it calculates the updated speed of the virtual car. In case of an alarm situation - such as invalid or missing sensor data, an object detected at critical distance, or a loss of Bluetooth communication - the ACC is automatically deactivated and the driver is alerted to take control.
+When the ACC is activated, Node 2 executes a periodic task to receive distance measurements from Node 1. Based on these readings, it calculates the updated speed of the virtual car. In case of an alarm situation - such as invalid or missing sensor data, or a loss of Bluetooth communication - the ACC is automatically deactivated and the driver is alerted to take over control.
 
 \subsection{Software modules}
 
 \begin{itemize}
-	\item bt\_connection on Node 1 and Node 2
-	\item acc\_control on Node 2
-	\item proximity\_reader on Node 1
-	\item display\_control on Node 2
-	\item fault\_injection\_agent
+	\item CryptoComm component on Node 1 and Node 2
+	\item commThread (Tx) on Node 1
+	\item sensorThread on Node 1
+	\item commThread (Rx) on Node 2
+	\item accThread on Node 2
+	\item guiThread on Node 2
 \end{itemize}
 
-
 \subsubsection{Safety related modules}
-	% \begin{enumerate}
-	% 	\item Modul x: \\
-	% 		Description:\\
-	% 		Functions:\\
-	% 		Data:\\
-	% 		Requirements see: \ref{req.1.1}, .... \\
-	% \end{enumerate}
+\begin{enumerate}
+	\item sensorThread: \\
+		Description: Reads distance measurement from two redundant proximity sensors on Node 1\\
+		Functions: (void *)sensorThread(void *)\\
+		Data: gCurrentDistanceReading (write)\\
+		Requirements see: \ref{req.1}, \ref{req.2} \\
+	\item accThread: \\
+		Description: Processes received distance readings, turns ACC off and warns in case of an error \\
+		Functions: (void *)accThread(void *)\\
+		Data: gCurrentDistanceReading (read)\\
+		Requirements see: \ref{req.4}, \ref{req.5}, \ref{req.7}, \ref{req.11}, \ref{req.12}, \ref{req.13} \\
+	\item guiThread: \\
+		Description: Informs the driver about vehicle speed, distance to the next car in front, status of the ACC \\
+		Functions: (void *)guiThread(void *)\\
+		Data: getter, setter functions shared with accThread \\
+		Requirements see: \ref{req.3}, \ref{req.6}, \ref{req.9}, \ref{req.10}, \ref{req.11} \\
+	\item commThread (Node 2): \\
+		Description: The communication thread on Node 2 receives and validates distance readings, restarts broken Bluetooth connections \\
+		Functions: (void *)commThread(void *)\\
+		Data: gCurrentDistanceReading (write)\\
+		Requirements see: \ref{req.8} \\
+\end{enumerate}
 
 
 \subsubsection{Security related modules}
 
+TBD
+
 \subsubsection{Modules with no influence on Safety and Security}
+
+None.
 
 \subsection{Libraries}
 
 Description of used function with parameters.
 
+\begin{enumerate}
+	\item LibTomCrypt: \href{https://github.com/libtom/libtomcrypt.git} {https://github.com/libtom/libtomcrypt.git}, used for random number generation, AES session key generation, HMAC generation and verification.
+	\item LibTomMath: \href{https://github.com/libtom/libtommath.git} {https://github.com/libtom/libtommath.git}, required by LibTomCrypt.
+	\item pigpio: \href{https://github.com/joan2937/pigpio.git} {https://github.com/joan2937/pigpio.git}, used for accessing readings of ultrasonic sensors.
+	\item catch2: \href{https://github.com/catchorg/Catch2.git} {https://github.com/catchorg/Catch2.git}, unit test framework
+	\item glibc, libstdc++: Posix functions for timestamp retrieval, pthread creation, mutex creation, output stream handling, containers, e.g. std::array
+	\item bluez, gio: Libraries for setting up Bluetooth sockets
+\end{enumerate}
 
 \subsection{Interrupts}
 
-Definition of priorities.
+No interrupts, or interrupt service routines are used in this project.
 
 \subsection{Pinout}
 
@@ -124,9 +150,9 @@ Figure \ref{fig:gui} shows the dashboard GUI, containing the controls for accele
 
 FIXME: After key establishment, we should use a challenge-response round, so each participant proves to the other it owns the PSK. If that does not work on both sides, the connection should be dropped.
 
-\paragraph{} After the common session key is established, the application uses a client server communication pattern, Node 1 acting as server and Node 2 acting as client. Node 2 periodically sends request messages to Node 1 which sends response messages. The message layout looks like depicted in the second and third messages in Figure \ref{fig:msg}. All multi byte fields are encoded as big-endian/in network byte order, i.e. the first byte of a field contains the MSB.
+\paragraph{} After the common session key is established, Node 1 periodically sends sensor messages to Node 2. The message layout looks like depicted in the second entry in Figure \ref{fig:msg}. All multi byte fields are encoded as big-endian/in network byte order, i.e. the first byte of a field contains the MSB.
 
-\paragraph{} All messages have the following layout:
+\paragraph{} The message has the following layout:
 \begin{itemize}
 	\item MessageType: 1 byte, indicates the content of the Payload field
 	\item Counter: 4 bytes, zero based 32 bit unsigned integer
@@ -134,10 +160,7 @@ FIXME: After key establishment, we should use a challenge-response round, so eac
 	\item HMAC: SHA-256 based HMAC, protecting all fields before the HMAC
 \end{itemize}
 
-\paragraph{} The request message, sent from Node 2 to Node 1, holds the \emph{Cmd} field, conveying the particular request to Node 2. Currently, only \emph{0x01} is supported, which requests the current distance reading from Node2.
-
-\paragraph{} The response message, sent from Node 1 to Node 2, holds the \emph{Distance} field, conveying the most recent distance readings from Node1. In the error free case, that field holds values in the range of [0..400] indicating the measured distance to the next object in [m]. A value of \emph{0} indicates a measured distance below one meter, while a value of \emph{400} indicates a distance of 400 meters or a greater distance. A value of \emph{0xffff} indicates that both sensors yielded inconsistent readings (FIXME: Define what inconsistent means in our system), and the value of \emph{0xfffe} indicates that Node 1 detected a failure of one or both procimity sensors.
-
+\paragraph{} The sensor message, sent from Node 1 to Node 2, holds the \emph{Distance} field, conveying the most recent distance readings from Node1. In the error free case, that field holds values in the range of [0..400] indicating the measured distance to the next object in [m]. A value of \emph{0} indicates a measured distance below one meter, while a value of \emph{400} indicates a distance of 400 meters or a greater distance. A value of \emph{0xffff} indicates that both sensors yielded inconsistent readings (i.e. readings deviating by more than 10\%), and the value of \emph{0xfffe} indicates that Node 1 detected a failure of one or both proximity sensors.
 
 \begin{figure}[h]
 	\includegraphics[height=50mm]{images/MessageLayout.png}

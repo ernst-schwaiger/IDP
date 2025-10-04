@@ -5,9 +5,6 @@
 
 \subsection{Safety related requirements}
 
-
-
-
  \begin{enumerate}[label*=\arabic*.]
  	\item \label{req.1}  Requirement: \\
 	 	The system shall be able to respond to a measurement error within 1 second by deactivating itself.  \\
@@ -28,7 +25,7 @@
         \item \label{req.5} Requirement: \\
         The system shall automatically detect a failure of the communication subsystem (Bluetooth) by recognizing that a packet could not be sent, or by recognizing that no response is received within a defined period (500 ms) after a successful transmission. \\
         \item \label{req.6} Requirement: \\
-        The system is designed to inform the driver of a detected communication subsystem failure by switching on a red warning LED. \\
+        The system shall inform the driver of a detected communication subsystem failure by switching on a red warning LED. \\
         \item \label{req.7} Requirement: \\
         The system shall automatically switch off when a communication subsystem (Bluetooth) error is detected. \\
         \item \label{req.8} Requirement: \\
@@ -36,7 +33,7 @@
         \item \label{req.9} Requirement: \\
         The system shall inform the driver about the status of the system via a green status LED and the ACC push button display (ACC ON/ACC OFF). \\
         \item \label{req.10} Requirement: \\
-        The system shall not be activated if the sensors or communication have failed. \\
+        The system shall prevent the user from activating it if the sensors or communication have failed. \\
         \item \label{req.11} Requirement: \\
         Once activated, the system shall note the current speed of the vehicle and not exceed it. \\
         \item \label{req.12} Requirement: \\
@@ -83,7 +80,7 @@
 \subsection{Requirements with no influence on Safety and Security}
 
 \begin{enumerate}[label*=\arabic*.]
- 	\item \label{req.1}  Requirement: \\
+ 	\item \label{req.noss.1}  Requirement: \\
 	 	The ACC display shall have a black background.  \\
 	 	%Folge Requirements: \ref{req.1.1} , \ref{req.1.2}  
 	 	%\begin{enumerate}[label*=\arabic*.]
@@ -93,17 +90,19 @@
 	 		%At program start the USART sending error messages must be tested.\\ 
 	 	%\end{enumerate}
 
-        \item \label{req.2} Requirement: \\
+        \item \label{req.noss.2} Requirement: \\
         The speed shall be displayed in km/h.  \\
-	 	\item \label{req.3} Requirement: \\
+	 	\item \label{req.noss.3} Requirement: \\
         The distance to the vehicle in front shall be displayed in meters. \\
-        \item \label{req.4} Requirement: \\
+        \item \label{req.noss.4} Requirement: \\
         The speed shall be displayed as an integer value without decimal places. \\
         %The ESC key shall close the GUI window. \\
-        \item \label{req.5} Requirement: \\
+        \item \label{req.noss.5} Requirement: \\
         There shall be one button for acceleration and one for deceleration in the GUI. \\
-        \item \label{req.6} Requirement: \\
+        \item \label{req.noss.6} Requirement: \\
         The GUI shall allow the speed to be continuously increased or decreased by holding down the acceleration and deceleration buttons without the user having to tap repeatedly. \\
+        \item \label{req.noss.7} Requirement: \\
+        Pressing the acceleration and one for deceleration buttons while ACC is in the ON state shall put the ACC in the OFF state. \\
 
         
 	 \end{enumerate}
