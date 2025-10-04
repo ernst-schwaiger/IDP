@@ -104,8 +104,8 @@ static void commLoop(acc::BTListenSocket &listenSocket, pthread_mutex_t *pLock)
             numTxSuccess++;
         }        
 
-        // Sleep 2.5ms
-        usleep(2'500);
+        // Sleep 25ms, oversampling sensor readings by a factor of two
+        usleep(25'000);
     }
 
     cout << "Tx Fails: " << numTxFails << ", Tx Success: " << numTxSuccess << "\n";

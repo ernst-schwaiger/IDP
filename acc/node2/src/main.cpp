@@ -17,28 +17,44 @@ enum class ACC_Status
     ERROR
 };
 
+typedef struct 
+{
+    uint32_t timestamp;
+    uint16_t distance;
+} DistanceReadingType;
+
 // constants
 constexpr uint8_t ERROR_COUNT_MAX = 4U;
 constexpr uint16_t VEHICLE_SPEED_MAX = 200U;
 
 // global var, written by the sensor thread, shall only be accessed via get/set functions
-volatile uint16_t gCurrentDistanceReading = 0xffff;
+volatile DistanceReadingType gCurrentDistanceReading = { 0U, 0xffff };
 
-uint16_t getCurrentDistanceReading(pthread_mutex_t *pLock)
+static unsigned long getTimestampMs()
 {
-    pthread_mutex_lock(pLock);
-    uint16_t currentReading = gCurrentDistanceReading;
-    pthread_mutex_unlock(pLock);
-    return currentReading;
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+
+    long ms = ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+    printf("Current time in ms: %ld\n", ms);
+    return 0;
 }
 
-void setCurrentDistanceReading(pthread_mutex_t *pLock, uint16_t value)
+void getCurrentDistanceReading(pthread_mutex_t *pLock, DistanceReadingType *pReading)
 {
     pthread_mutex_lock(pLock);
-    gCurrentDistanceReading = value;
+    pReading->distance = gCurrentDistanceReading.distance;
+    pReading->timestamp = gCurrentDistanceReading.timestamp;
     pthread_mutex_unlock(pLock);
 }
 
+void setCurrentDistanceReading(pthread_mutex_t *pLock, uint16_t distance, uint32_t timestamp)
+{
+    pthread_mutex_lock(pLock);
+    gCurrentDistanceReading.distance = distance;
+    gCurrentDistanceReading.timestamp = timestamp;
+    pthread_mutex_unlock(pLock);
+}
 
 static bool isValidDistance(uint16_t currentReading)
 {
@@ -72,8 +88,7 @@ static uint8_t accFunc(uint16_t currentDistance, uint8_t currentSpeed)
 static void *accThread(void *arg)
 {
     pthread_mutex_t *pLock = reinterpret_cast<pthread_mutex_t *>(arg);
-    uint16_t lastSuccessfulReading = 0xffff;
-    uint8_t errorCount = 0;
+    DistanceReadingType latestValidDistanceReading = { 0, 0xffff };
 
     while (1)
     {
@@ -82,37 +97,37 @@ static void *accThread(void *arg)
         // get the current status of the ACC from the GUI
         ACC_Status acc_status = getACCStatusFromGUI();
 
-        uint16_t currentReading = getCurrentDistanceReading(pLock);
+        DistanceReadingType reading;
+        getCurrentDistanceReading(pLock, &reading);
 
-        if (isValidDistance(currentReading))
+        if (isValidDistance(reading.distance))
         {
-            lastSuccessfulReading = currentReading;
+            latestValidDistanceReading.distance = reading.distance;
+            latestValidDistanceReading.timestamp = reading.timestamp;
+
             if (acc_status == ACC_Status::ERROR)
             {
                 acc_status = ACC_Status::OFF;
             }
         }
-        else
-        {
-            errorCount = std::min(ERROR_COUNT_MAX, ++errorCount);
-        }
 
-        if ((errorCount < ERROR_COUNT_MAX) && isValidDistance(lastSuccessfulReading))
+        // Is our latest reading too old?
+        if ((getTimestampMs() - reading.timestamp) > 500)
+        {
+            acc_status = ACC_Status::ERROR;
+        }
+        else
         {
             if (acc_status == ACC_Status::ON)
             {
-                currentSpeed = accFunc(lastSuccessfulReading, currentSpeed);
+                currentSpeed = accFunc(latestValidDistanceReading.distance, currentSpeed);
             }
-        }
-        else
-        {
-            acc_status = ACC_Status::ERROR;
         }
 
         // FIXME: Update GUI with acc_status, currentSpeed, lastSuccessfulReadDistance
 
-        // Sleep 5ms
-        usleep(5'000);        
+        // Sleep 50ms
+        usleep(50'000);       
     }
 
     return nullptr;
@@ -142,44 +157,31 @@ static void commLoop(char *remoteMAC, pthread_mutex_t *pLock)
 
     // At this point, we have a connection set up
     cout << "Connection to " << remoteMAC << " established.\n";
-
-    // buffer for sending and receiving messages
-    array<uint8_t, MAX_MSG_LEN> msgBuf = { 0 };
-
-    // counter for preventing replay attacks
-    uint32_t counter = 0;
     
     // Create session key
     conn.keyExchangeClient();
 
+    // counter;  a timestamp indicating the ms since the Bluetooth connection
+    // was established between Node 1, Node 2
+    uint32_t counter = 0;
+
     while (1)
     {
-        // just send a dummy byte
-        msgBuf[0] = 0;
-        if (conn.sendWithCounterAndMAC(0x01, {&msgBuf[0], 1}, counter) >= 0)
+        uint8_t msgType;
+        // buffer for sending and receiving messages
+        array<uint8_t, MAX_MSG_LEN> msgBuf = { 0 };
+        // message reception (blocking)
+        if (conn.receiveWithCounterAndMAC(msgType, {&msgBuf[0], msgBuf.size()}, counter, true) < 0)
         {
-            // If we fail to receive, we convey an error status
-            // FIXME: Define error codes for reading.
-            uint16_t receivedReading = 0xffff;
-
-            // wait for the response
-            uint8_t msgType;
-            if (conn.receiveWithCounterAndMAC(msgType, {&msgBuf[0], msgBuf.size()}, counter, true) < 0)
+            if (msgType == 0x02)
             {
-                if (msgType == 0x02)
-                {
-                    receivedReading = (msgBuf[0] << 8) + msgBuf[1];
-                }
+                uint16_t receivedReading = (msgBuf[0] << 8) + msgBuf[1];
+                // Update current distance reading in a critical section, together with the measured timestamp
+                setCurrentDistanceReading(pLock, receivedReading, getTimestampMs());        
             }
-
-            // Update current distance reading in a critical section
-            setCurrentDistanceReading(pLock, receivedReading);
         }
 
-        counter++;
-
-        // sleep for 5ms
-        usleep(5'000);
+        // no sleep required here; we block in the receive function
     }
 }
 
