@@ -1,8 +1,8 @@
 # acc
 
-Adaptive cruise control project
+Adaptive cruise control project; tested on Raspberry Pi 4B, 5B nodes running Raspbian OS 13/Trixie.
 
-Prerequisites:
+Install Prerequisites:
 ```bash
 sudo apt update && sudo apt install -y \
     g++ \
@@ -19,12 +19,9 @@ sudo apt update && sudo apt install -y \
     qt6-wayland-dev
 ```
 
-running qt creator on WSL: Set environment variable to tell qt to use X11 instead of
-(default) wayland before execution `QT_QPA_PLATFORM=xcb qtcreator`.
+Running qt creator on WSL for tesing GUI on host: Set environment variable to tell qt to use X11 instead of (default) wayland before execution `QT_QPA_PLATFORM=xcb qtcreator`.
 
-
-
-for building the documentation:
+For building the design document:
 ```bash
 sudo apt install -y texlive latexmk texlive-latex-extra
 ```
@@ -141,7 +138,7 @@ VS Code supports to connect to a remote node, and to execute as if VS code was r
 - You will be asked if you trust the remote node
 - After the installation is done, open the project folder (VS Code will display the folders on the remote machine).
 - When compiling, debugging, it may be necessary to (re-) install some of the extensions, C++, CMake, ... "Install in SSH: <node>" to have it available.
-- As a shortcut, switch to the "Remote Explorer" View in VS Code, select "Remotes (Tunnels/SSH)" in the top combo box, use the "+" icon to add a new remote host to connect to, and add the ssh command, e.g. `ssh uer@node`. The configuration is stored and can be actrivated in the future from the Remotes View.
+- As a shortcut, switch to the "Remote Explorer" View in VS Code, select "Remotes (Tunnels/SSH)" in the top combo box, use the "+" icon to add a new remote host to connect to, and add the ssh command, e.g. `ssh user@node`. The configuration is stored and can be actrivated in the future from the Remotes View.
 
 See also:
 - https://code.visualstudio.com/docs/remote/ssh
@@ -149,24 +146,9 @@ See also:
 
 ## TODOs
 
-- detailed concept for acc
-- check: is encryption needed for bluetooth comm, or is MAC with counter sufficient?
-- fix coverage
-- implement async send/receive in BT sockets.
-- implement async reading of proximity sensors
-
-## Open Topics
-- Intro to project structure: CMake, LaTeX, VS Code plugins. Howto build, howto debug
-- Which OSes shall we use? Debuggability, real-time properties, boot time, ... (ask Mattias?)
+- Review design document: State Charts of Sensor Thread, Requirements tracing to software modules
+- Discuss in Stride Session: Is encryption needed for bluetooth comm, or is MAC with counter sufficient?
+- Implement async reading of proximity sensors
 - MISRA allows exceptions in C++ code for error handling. OK in our projects as well? (Julia Teissl)
-- Encrypted messages/messages with MAC? Which Crypto Library? MAC, LibTomCrypt
-- Define Message Layout: node1->node2: (Converted) Sensor readings, message counter, MAC (Ernst)
-- Define Message Layout: node2->node1: Request ID, parameters, message counter, MAC (Ernst)
-- Discuss: Usage of 3 inch display with touch function: Has anyone used such a device yet?
 - Fault injector modules to test our software when it detects failures
 - Software design: Decouple "business logic" of our app from concrete HW to make it testable.
-- Add Unit Tests, see Catch2 Tests, have a look at the coverage report.
-- Who takes which tasks?
--- Stefan: Node1, proximity devices
--- Lorenzo: Touch Display
--- Ernst: Communication/Crypto :-).

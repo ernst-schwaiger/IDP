@@ -125,7 +125,9 @@ static void *accThread(void *arg)
             }
             
             // Comment in for debugging.
-            //cout << "Distance: " << latestValidDistanceReading.distance << ", TS: " << latestValidDistanceReading.timestamp << "\n";   
+            // cout << "Distance: " << latestValidDistanceReading.distance 
+            //      << ", Speed: " << static_cast<uint16_t>(currentSpeed)
+            //      << ", TS: " << (latestValidDistanceReading.timestamp % 1000) << "\n";   
         }
 
         // FIXME: Update GUI with acc_status, currentSpeed, lastSuccessfulReadDistance
