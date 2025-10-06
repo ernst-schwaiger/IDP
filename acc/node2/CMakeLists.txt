@@ -1,9 +1,18 @@
 project(node2)
 
-add_executable(node2 src/main.cpp)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
+
+add_executable(node2 
+    src/main.cpp
+    src/MainWindow.cpp
+    src/MainWindow.h
+    src/mainwindow.ui    
+    )
 
 # Link with libraries
-target_link_libraries(node2 PRIVATE CryptoComm)
+target_link_libraries(node2 PRIVATE CryptoComm Qt6::Widgets)
 
 # Include CommonLib headers
 target_include_directories(node2 PRIVATE

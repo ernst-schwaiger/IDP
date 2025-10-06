@@ -1,10 +1,15 @@
 #include <iostream>
 #include <span>
+#include <string.h>
 
 #include <signal.h>
 #include <time.h>
 
+#include <QApplication>
+#include <QScreen>
+
 #include <CryptoComm.h>
+#include "MainWindow.h"
 
 using namespace std;
 using namespace acc;
@@ -144,13 +149,22 @@ static void *guiThread(void *arg)
     // MUTEX for accessing the current distance reading via getCurrentDistanceReading(). 
     pthread_mutex_t *pLock = reinterpret_cast<pthread_mutex_t *>(arg);
 
-    // FIXME: Add one-time GUI init code here
+    // Set up GUI
+    qputenv("QT_AUTO_SCREEN_SCALE_FACTOR", QByteArray("0"));
+    qputenv("QT_SCALE_FACTOR", QByteArray("1"));
 
-    while (1)
-    {
-        // FIXME: Add GUI event loop here.
-        usleep(1'000'000);
-    }
+    int argc=1;
+    char argv0[10];
+    strncpy(argv0, "GUIThread", sizeof(argv0));
+    char *argv[] = { argv0 };
+
+    QApplication app(argc, argv);
+
+    MainWindow w;
+    // Use less than 800x480 pixels to ensure all widgets fit
+    w.resize(760, 440);
+    w.show();
+    app.exec();
 
     // won't ever be reached.
     return nullptr;

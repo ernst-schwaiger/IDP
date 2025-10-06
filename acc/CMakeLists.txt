@@ -50,6 +50,8 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(BLUEZ REQUIRED bluez)
 pkg_check_modules(GIO REQUIRED gio-2.0)
 
+find_package(Qt6 REQUIRED COMPONENTS Widgets)
+
 message("BLUEZ_LIBRARIES: ${BLUEZ_LIBRARIES}")
 message("BLUEZ_LIBRARY_DIRS: ${BLUEZ_LIBRARY_DIRS}")
 message("BLUEZ_INCLUDE_DIRS: ${BLUEZ_INCLUDE_DIRS}")
