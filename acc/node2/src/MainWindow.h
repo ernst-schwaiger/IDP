@@ -3,6 +3,8 @@
 #include <QMainWindow>
 #include <QTimer>
 
+#include "Node2Types.h"
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -26,7 +28,6 @@ private slots:
     void onSimTick();                // einfache Distanz-Simulation
 
 private:
-    enum class AccState { Off, On, Fault };
 
     void setupRightGridLayout();     // Zeilen/Spalten für gridLayout_rechts setzen
     void updateAccState(AccState s); // Button-Text/Farbe/Enable

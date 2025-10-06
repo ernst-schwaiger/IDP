@@ -11,23 +11,25 @@ namespace {
 inline int clamp(int v, int lo, int hi) { return std::min(hi, std::max(lo, v)); }
 }
 
+using namespace std;
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
 
     // Schriftgröße Distance/Speed Labels
-{
-    QFont f1 = ui->label_Speed->font();
-    f1.setPointSize(20);
-    f1.setBold(true);
-    ui->label_Speed->setFont(f1);
+    {
+        QFont f1 = ui->label_Speed->font();
+        f1.setPointSize(20);
+        f1.setBold(true);
+        ui->label_Speed->setFont(f1);
 
-    QFont f2 = ui->label_Distance->font();
-    f2.setPointSize(20);
-    f2.setBold(true);
-    ui->label_Distance->setFont(f2);
-}
+        QFont f2 = ui->label_Distance->font();
+        f2.setPointSize(20);
+        f2.setBold(true);
+        ui->label_Distance->setFont(f2);
+    }
 
     // --- Rechte Spalte layouten (LED-Zeile sichtbar machen) ---
     setupRightGridLayout();
@@ -72,7 +74,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // --- einfache Distanz-Simulation ---
     simTimer_ = new QTimer(this);
-    simTimer_->setInterval(1000); // jede sekunde
+    simTimer_->setInterval(50); // 50ms
     connect(simTimer_, &QTimer::timeout, this, &MainWindow::onSimTick);
     simTimer_->start();
 }
@@ -147,31 +149,78 @@ void MainWindow::setFault(bool faultOn) {
 // ------------------------------------------------------------------
 
 
-void MainWindow::onAccToggled(bool on) {
-    if (fault_ || !accAvailable_) {
+void MainWindow::onAccToggled(bool) 
+{
+    AccState newAccState = AccState::Off;
+    VehicleStateInfoType vehicleState;
+    getCurrentVehicleState(&vehicleState);
+
+    if (vehicleState.accState == AccState::Fault)
+    {
         ui->btnACC->blockSignals(true);
         ui->btnACC->setChecked(false);
         ui->btnACC->blockSignals(false);
-        updateAccState(AccState::Off);
-        return;
+        newAccState = AccState::Off;
     }
-    updateAccState(on ? AccState::On : AccState::Off);
+    else
+    {
+        newAccState = (vehicleState.accState == AccState::Off) ? AccState::On : AccState::Off; 
+    }
+
+    // Update GUI
+    updateAccState(newAccState);
+    // Update Global Vehicle State
+    setCurrentVehicleState(&newAccState, nullptr, nullptr);
 }
 
-void MainWindow::onSpeedUp() {
-    setSpeedKmh(currentSpeed_ + 5);
-    if (ui->btnACC->isChecked()) {
+void MainWindow::onSpeedUp() 
+{
+    VehicleStateInfoType vehicleState;
+    getCurrentVehicleState(&vehicleState);
+
+    // Increase current speed, up to VEHICLE_SPEED_MAX
+    vehicleState.speedKmH += 5;
+    vehicleState.speedKmH = min(vehicleState.speedKmH, VEHICLE_SPEED_MAX);
+
+    // If ACC is turned on, turn it off now
+    AccState *pAccState = nullptr;
+    if (vehicleState.accState == AccState::On)
+    {
+        vehicleState.accState = AccState::Off;
+        pAccState = &vehicleState.accState;
         ui->btnACC->setChecked(false);
         updateAccState(AccState::Off);
     }
+
+    // set speed in GUI
+    setSpeedKmh(vehicleState.speedKmH);
+    // write back global vehicle state
+    setCurrentVehicleState(pAccState, &vehicleState.speedKmH, nullptr);
 }
 
-void MainWindow::onSpeedDown() {
-    setSpeedKmh(currentSpeed_ - 5);
-    if (ui->btnACC->isChecked()) {
+void MainWindow::onSpeedDown()
+{
+    VehicleStateInfoType vehicleState;
+    getCurrentVehicleState(&vehicleState);
+
+    // Decrease current speed, not below 0
+    uint8_t speedReduction = min(vehicleState.speedKmH, static_cast<uint8_t>(5U));
+    vehicleState.speedKmH -= speedReduction;
+
+    // If ACC is turned on, turn it off now
+    AccState *pAccState = nullptr;
+    if (vehicleState.accState == AccState::On)
+    {
+        vehicleState.accState = AccState::Off;
+        pAccState = &vehicleState.accState;
         ui->btnACC->setChecked(false);
         updateAccState(AccState::Off);
     }
+
+    // set speed in GUI
+    setSpeedKmh(vehicleState.speedKmH);
+    // write back global vehicle state
+    setCurrentVehicleState(pAccState, &vehicleState.speedKmH, nullptr);
 }
 
 // Darstellung von ACC-Status, LED, Speed-Farbe, Alarm
@@ -189,15 +238,22 @@ void MainWindow::updateAccState(AccState s) {
     case AccState::Fault:
         ui->btnACC->setText("ACC OFF");
         ui->btnACC->setStyleSheet(QString("%1 color:#ff3b30; font-weight:600;").arg(baseBtn));
-        ui->btnACC->setEnabled(false);
-        return;
+        break;
     case AccState::Off:
     default:
         ui->btnACC->setText("ACC OFF");
         ui->btnACC->setStyleSheet(QString("%1 color:#ff3b30; font-weight:600;").arg(baseBtn));
         break;
     }
-    ui->btnACC->setEnabled(accAvailable_ && !fault_);
+
+    if (s != AccState::Fault)
+    {
+        ui->btnACC->setEnabled(accAvailable_ && !fault_);
+    }
+    else
+    {
+        ui->btnACC->setEnabled(false);
+    }
 }
 
 void MainWindow::updateHealthLed() {
@@ -223,12 +279,16 @@ void MainWindow::showAlarm(bool on) {
 // Timer-Callback für Distanz-Simulation
 // ------------------------------------------------------------------
 
-void MainWindow::onSimTick() {
-    // Einfacher Demo-Wert: 20 m ↔ 300 m „atmen“
-    static bool up = true;
-    static double d = 150.0;
-    d += (up ? 25.0 : -25.0);
-    if (d > 300) { d = 300; up = false; }
-    if (d <  20) { d =  20; up = true;  }
-    setDistanceMeters(d, /*accFailed=*/false);
+void MainWindow::onSimTick() 
+{
+    VehicleStateInfoType vehicleState;
+    getCurrentVehicleState(&vehicleState);
+
+    setDistanceMeters(vehicleState.distanceMeters, !isValidDistance(vehicleState.distanceMeters));
+    updateAccState(vehicleState.accState);
+
+    if (vehicleState.accState == AccState::On)
+    {
+        setSpeedKmh(vehicleState.speedKmH);
+    }
 }

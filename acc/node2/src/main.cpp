@@ -1,5 +1,6 @@
 #include <iostream>
 #include <span>
+#include <cstdint>
 #include <string.h>
 
 #include <signal.h>
@@ -10,32 +11,90 @@
 
 #include <CryptoComm.h>
 #include "MainWindow.h"
+#include "Node2Types.h"
 
 using namespace std;
 using namespace acc;
-
-// Type definitions
-enum class ACC_Status
-{
-    OFF,
-    ON,
-    ERROR
-};
 
 typedef struct 
 {
     uint64_t timestamp;
     uint16_t distance;
+} DistanceReadingInfoType;
+
+typedef struct 
+{
+    DistanceReadingInfoType info;
+    pthread_mutex_t lock;
 } DistanceReadingType;
 
+typedef struct
+{
+    VehicleStateInfoType info;
+    pthread_mutex_t lock;
+} VehicleStateType;
+
 // constants
-constexpr uint8_t ERROR_COUNT_MAX = 4U;
-constexpr uint16_t VEHICLE_SPEED_MAX = 200U;
 constexpr uint16_t DISTANCE_READING_ERROR_1 = 65534U;
 constexpr uint16_t DISTANCE_READING_ERROR_2 = 65535U;
 
-// global var, written by the sensor thread, shall only be accessed via get/set functions
-volatile DistanceReadingType gCurrentDistanceReading = { 0U, 0xffff };
+// global var, written by the sensor thread, read by the acc thread, shall only be accessed via get/set functions
+DistanceReadingType gCurrentDistanceReading = { { 0UL, 0xffff}, PTHREAD_MUTEX_INITIALIZER };
+
+// global vehicle state, read and written by acc thread and GUI/main thread, shall only be accessed via get/set functions
+VehicleStateType gVehicleState = { {AccState::Off, 0, 0 }, PTHREAD_MUTEX_INITIALIZER};
+
+static void getCurrentDistanceReading(DistanceReadingInfoType *pReading)
+{
+    pthread_mutex_lock(&gCurrentDistanceReading.lock);
+    pReading->distance = gCurrentDistanceReading.info.distance;
+    pReading->timestamp = gCurrentDistanceReading.info.timestamp;
+    pthread_mutex_unlock(&gCurrentDistanceReading.lock);
+}
+
+static void setCurrentDistanceReading(DistanceReadingInfoType const *pReading)
+{
+    pthread_mutex_lock(&gCurrentDistanceReading.lock);
+    gCurrentDistanceReading.info.distance = pReading->distance;
+    gCurrentDistanceReading.info.timestamp = pReading->timestamp;
+    pthread_mutex_unlock(&gCurrentDistanceReading.lock);
+}
+
+bool isValidDistance(uint16_t currentReading)
+{
+    return (currentReading < DISTANCE_READING_ERROR_1);
+}
+
+void getCurrentVehicleState(VehicleStateInfoType *pVehicleState)
+{
+    pthread_mutex_lock(&gVehicleState.lock);
+    pVehicleState->accState = gVehicleState.info.accState;
+    pVehicleState->distanceMeters = gVehicleState.info.distanceMeters;
+    pVehicleState->speedKmH = gVehicleState.info.speedKmH;
+    pthread_mutex_unlock(&gVehicleState.lock);
+}
+
+void setCurrentVehicleState(AccState const *pACCState, uint8_t const *pSpeedKmH, uint16_t const *pDistanceMeters)
+{
+    pthread_mutex_lock(&gVehicleState.lock);
+    if (pACCState != nullptr)
+    {
+        gVehicleState.info.accState = *pACCState;
+    }
+
+    if (pSpeedKmH != nullptr)
+    {
+        gVehicleState.info.speedKmH = *pSpeedKmH;
+
+    }
+
+    if (pDistanceMeters != nullptr)
+    {
+        gVehicleState.info.distanceMeters = *pDistanceMeters;
+    }
+
+    pthread_mutex_unlock(&gVehicleState.lock);
+}
 
 static uint64_t getTimestampMs()
 {
@@ -44,39 +103,6 @@ static uint64_t getTimestampMs()
 
     uint64_t ms = ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
     return ms;
-}
-
-void getCurrentDistanceReading(pthread_mutex_t *pLock, DistanceReadingType *pReading)
-{
-    pthread_mutex_lock(pLock);
-    pReading->distance = gCurrentDistanceReading.distance;
-    pReading->timestamp = gCurrentDistanceReading.timestamp;
-    pthread_mutex_unlock(pLock);
-}
-
-void setCurrentDistanceReading(pthread_mutex_t *pLock, uint16_t distance, uint64_t timestamp)
-{
-    pthread_mutex_lock(pLock);
-    gCurrentDistanceReading.distance = distance;
-    gCurrentDistanceReading.timestamp = timestamp;
-    pthread_mutex_unlock(pLock);
-}
-
-static bool isValidDistance(uint16_t currentReading)
-{
-    return (currentReading < DISTANCE_READING_ERROR_1);
-}
-
-static ACC_Status getACCStatusFromGUI()
-{
-    // FIXME: Implement this
-    return ACC_Status::ON;
-}
-
-static uint8_t getCurrentSpeedFromGUI()
-{
-    // FIXME: Implement this
-    return 42U;
 }
 
 static uint8_t accFunc(uint16_t currentDistance, uint8_t currentSpeed)
@@ -91,42 +117,45 @@ static uint8_t accFunc(uint16_t currentDistance, uint8_t currentSpeed)
     return currentSpeed;
 }
 
-static void *accThread(void *arg)
+static void *accThread(void *)
 {
-    pthread_mutex_t *pLock = reinterpret_cast<pthread_mutex_t *>(arg);
-    DistanceReadingType latestValidDistanceReading = { 0, 0xffff };
+    // GUI and MUTEX for accessing the current distance reading via getCurrentDistanceReading(). 
+    DistanceReadingInfoType latestValidDistanceReading = { 0, 0xffff };
 
     while (1)
     {
-        // get the current speed from the GUI
-        uint8_t currentSpeed = getCurrentSpeedFromGUI();
-        // get the current status of the ACC from the GUI
-        ACC_Status acc_status = getACCStatusFromGUI();
+        // Get global vehicle state
+        VehicleStateInfoType currentVehicleState = { AccState::Off, 0U, 0U };
+        getCurrentVehicleState(&currentVehicleState);
+        bool updateAccState = false;
 
-        DistanceReadingType reading;
-        getCurrentDistanceReading(pLock, &reading);
+        // Get most recently received distance reading
+        DistanceReadingInfoType reading;
+        getCurrentDistanceReading(&reading);
 
         if (isValidDistance(reading.distance))
         {
             latestValidDistanceReading.distance = reading.distance;
             latestValidDistanceReading.timestamp = reading.timestamp;
 
-            if (acc_status == ACC_Status::ERROR)
+            if (currentVehicleState.accState == AccState::Fault)
             {
-                acc_status = ACC_Status::OFF;
+                currentVehicleState.accState = AccState::Off;
+                updateAccState = true;
             }
         }
 
-        // Is our latest reading too old?
+        // Is our latest reading too old (older than 500ms)?
         if ((getTimestampMs() - reading.timestamp) > 500)
         {
-            acc_status = ACC_Status::ERROR;
+            currentVehicleState.accState = AccState::Fault;
+            updateAccState = true;
         }
         else
         {
-            if (acc_status == ACC_Status::ON)
+            if (currentVehicleState.accState == AccState::On)
             {
-                currentSpeed = accFunc(latestValidDistanceReading.distance, currentSpeed);
+                currentVehicleState.speedKmH = accFunc(latestValidDistanceReading.distance, currentVehicleState.speedKmH);
             }
             
             // Comment in for debugging.
@@ -135,7 +164,22 @@ static void *accThread(void *arg)
             //      << ", TS: " << (latestValidDistanceReading.timestamp % 1000) << "\n";   
         }
 
-        // FIXME: Update GUI with acc_status, currentSpeed, lastSuccessfulReadDistance
+        // Calculate new Global Vehicle State
+        uint16_t *pDistanceMeters = &reading.distance;
+        AccState *pAccState = nullptr;
+        if (updateAccState)
+        {
+            pAccState = &currentVehicleState.accState;
+        }
+
+        uint8_t *pSpeedKmH = nullptr;
+        if (currentVehicleState.accState == AccState::On)
+        {
+            pSpeedKmH = &currentVehicleState.speedKmH;
+        }
+
+        // Write back new Global Vehicle State
+        setCurrentVehicleState(pAccState, pSpeedKmH, pDistanceMeters);
 
         // Sleep 50ms
         usleep(50'000);       
@@ -144,33 +188,7 @@ static void *accThread(void *arg)
     return nullptr;
 }
 
-static void *guiThread(void *arg)
-{
-    // MUTEX for accessing the current distance reading via getCurrentDistanceReading(). 
-    pthread_mutex_t *pLock = reinterpret_cast<pthread_mutex_t *>(arg);
-
-    // Set up GUI
-    qputenv("QT_AUTO_SCREEN_SCALE_FACTOR", QByteArray("0"));
-    qputenv("QT_SCALE_FACTOR", QByteArray("1"));
-
-    int argc=1;
-    char argv0[10];
-    strncpy(argv0, "GUIThread", sizeof(argv0));
-    char *argv[] = { argv0 };
-
-    QApplication app(argc, argv);
-
-    MainWindow w;
-    // Use less than 800x480 pixels to ensure all widgets fit
-    w.resize(760, 440);
-    w.show();
-    app.exec();
-
-    // won't ever be reached.
-    return nullptr;
-}
-
-static void commLoop(char *remoteMAC, pthread_mutex_t *pLock)
+static void commLoop(char const *remoteMAC)
 {
     // Set up a BT connection to node1
     BTConnection conn(remoteMAC);
@@ -195,14 +213,34 @@ static void commLoop(char *remoteMAC, pthread_mutex_t *pLock)
         {
             if (msgType == 0x02)
             {
-                uint16_t receivedReading = (msgBuf[0] << 8) + msgBuf[1];
-                // Update current distance reading in a critical section, together with the measured timestamp
-                uint64_t timestampMs = getTimestampMs();
-                setCurrentDistanceReading(pLock, receivedReading, timestampMs);     
+                DistanceReadingInfoType reading = { getTimestampMs(), static_cast<uint16_t>((msgBuf[0] << 8) + msgBuf[1]) };
+                setCurrentDistanceReading(&reading);     
             }
         }
 
         // no sleep required here; we block in the receive function
+    }
+}
+
+static void *commThread(void *arg)
+{
+    char const *pRemoteMAC = reinterpret_cast<char const *>(arg);
+
+    while (1)
+    {
+        try
+        {
+            commLoop(pRemoteMAC);
+        }
+        catch(const runtime_error &e)
+        {
+            cerr << "Runtime Exception: " << e.what() << '\n';
+            perror("Error message: ");
+        }
+        catch(...)
+        {
+            cerr << "Unknown exception occurred.\n";
+        }
     }
 }
 
@@ -216,42 +254,30 @@ int main(int argc, char *argv[])
 
     cout << "Node 2 started.\n";
 
-    // mutex for setting up the critical section
-    pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+    // Init GUI, start GUI thread
+    qputenv("QT_AUTO_SCREEN_SCALE_FACTOR", QByteArray("0"));
+    qputenv("QT_SCALE_FACTOR", QByteArray("1"));
+    QApplication app(argc, argv);
+    MainWindow w;
+    w.resize(760, 440);
+    w.show();
+
+    // Start Comm thread
+    pthread_t commThreadHandle;
+    if (pthread_create(&commThreadHandle, NULL, commThread, argv[1]))
+    {
+        cerr << "Error creating acc thread\n";
+        return 1;
+    }    
 
     // Start ACC thread
     pthread_t accThreadHandle;
-    if (pthread_create(&accThreadHandle, NULL, accThread, &lock)) 
+    if (pthread_create(&accThreadHandle, NULL, accThread, nullptr))
     {
         cerr << "Error creating acc thread\n";
         return 1;
-    }    
-
-    // Start GUI thread
-    pthread_t guiThreadHandle;
-    if (pthread_create(&guiThreadHandle, NULL, guiThread, &lock)) 
-    {
-        cerr << "Error creating acc thread\n";
-        return 1;
-    }    
-
-    while (1)
-    {
-        try
-        {
-            commLoop(argv[1], &lock);        
-        }
-        catch(const runtime_error &e)
-        {
-            cerr << "Runtime Exception: " << e.what() << '\n';
-            perror("Error message: ");
-        }
-        catch(...)
-        {
-            cerr << "Unknown exception occurred.\n";
-        }
     }
-
-    // Will never be reached
-    return 0;
+    
+    // QT requires the app to run in the main thread.
+    return app.exec();
 }
