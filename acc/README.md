@@ -146,18 +146,15 @@ See also:
 
 ## TODOs
 
-- Review design document: State Charts of Sensor Thread, Requirements tracing to software modules
 - Discuss in Stride Session: Is encryption needed for bluetooth comm, or is MAC with counter sufficient?
-- Implement async reading of proximity sensors
-- Implement storage of maximum speed acc speed once ACC is turned on.
-- Implement turning off ACC if speed gets below 30 kmH
-- Remove obsolete state variables in MainWindow (all state is now kept in global variable, protected with a lock)
-- Fault injector modules to test our software when it detects failures
-- Software design: Decouple "business logic" of our app from concrete HW to make it testable.
-- Implement proper thread cleanup in both nodes.
-- Create services that autostart node 1 and node 2 apps.
-- Run MISRA checks on our code using cppcheck.
-- Fix race conditions between GUI and acc thread. Add a dedicated lock
-- Use proper data types in GUI: uint8_t for speed, uint16_t for distance (avoid signed data types)
-- Business logic in GUI: If acc switches from failed to operable state, the state shall be always ("off") (instead of the state of the acc button).
-- move initializers of members into MainWindow constructor.
+- Implement storage of maximum speed acc speed once ACC is turned on. (Lorenzo)
+- Implement turning off ACC if speed gets below 30 kmH (Lorenzo)
+- Business logic in GUI: If acc switches from failed to operable state, the state shall be always ("off") (instead of the state of the acc button). (Lorenzo)
+- move initializers of members into MainWindow constructor. (Lorenzo)
+- Remove obsolete state variables in MainWindow (all state is now kept in global variable, protected with a lock) (Lorenzo)
+- Software design: Decouple "business logic" of our app from concrete HW to make it testable. (All three, if time available)
+- Implement proper thread cleanup in both nodes. (Ernst)
+- Create services that autostart node 1 and node 2 apps. (Ask whether this is required)
+- Run MISRA checks on our code using cppcheck. (Ernst)
+- Use proper data types in GUI: uint8_t for speed, uint16_t for distance (avoid signed data types) (Lorenzo)
+- Clarify WLAN router issue in lab (Stefan)
