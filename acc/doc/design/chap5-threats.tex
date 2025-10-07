@@ -33,8 +33,20 @@
 	
 \subsection{Identified threats without countermeasures}
 
-	\begin{enumerate}
-		\item Threat 1: 
-		\item Threat 2:
-		\item Threat 3:
+\begin{enumerate}
+		\item \textbf{Threat 1:} Preshared Key not protected
+
+            \textbf{Description:} The preshared key is stored openly in the repository. If accessed by unauthorized persons, it could be used to impersonate trusted nodes. This is acceptable for the prototype stage, but proper key storage should be implemented in production.
+            
+        \paragraph{}
+		\item \textbf{Threat 2:} No protection against buffer overflows
+        
+            \textbf{Description:} The code does not include checks to prevent buffer overflows. This could allow memory corruption or program crashes. As the focus lies on functionality, no memory-protection mechanisms are applied.
+
+        \paragraph{}
+		\item \textbf{Threat 3:} Rowhammer attacks not considered
+        
+            \textbf{Description:} Hardware-level Rowhammer attacks are not mitigated in this setup.
+
+
 	\end{enumerate}
