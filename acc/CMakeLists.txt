@@ -81,5 +81,6 @@ endif()
 
 # Add subdirectories
 add_subdirectory(libraries/CryptoComm)
+add_subdirectory(libraries/Helper)
 add_subdirectory(node1)
 add_subdirectory(node2)
