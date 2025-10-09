@@ -16,7 +16,7 @@ typedef struct
 {
     AccState accState;
     uint16_t distanceMeters;
-    uint8_t speedKmH;
+    uint32_t speedMetersPerHour;
 } VehicleStateInfoType;
 
 typedef struct 
@@ -36,7 +36,7 @@ constexpr uint8_t VEHICLE_SPEED_MAX = 200U;
 
 // APIs for MainWindow
 void getCurrentVehicleState(VehicleStateInfoType *pVehicleState);
-void setCurrentVehicleState(AccState const *pACCState, uint8_t const *pSpeedKmH, uint16_t const *pDistanceMeters);
+void setCurrentVehicleState(AccState const *pACCState, uint32_t const *pSpeedMetersPerHour, uint16_t const *pDistanceMeters);
 bool isValidDistance(uint16_t currentReading);
 
 // APIs for ACCThread
