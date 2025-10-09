@@ -95,15 +95,12 @@ In this subsection, the pinouts are presented separately for Node 1 and Node 2. 
 
 \subsubsection{Node 1}
 
-For Node 1, the ultrasonic sensor (HC-SR04) is connected to the Raspberry Pi. The VCC pin of the sensor is connected to the 5V power pin, while GND is connected to ground. The TRIG pin is wired to GPIO 23, and the ECHO pin is connected to GPIO 24 through a voltage divider using two resistors ($R_1 = 330\,\Omega$ and $R_2 = 470\,\Omega$) to safely reduce the signal from 5V to 3.3V. This can be viewed in Figure \ref{fig:node1-pinout}
-
-
-\begin{figure}[h]
-	\includegraphics[height=50mm]{images/pinout_node1.png}
-	\centering
-	\caption{Pinout Node 1}
-	\label{fig:node1-pinout}
-\end{figure}
+For Node 1, two ultrasonic sensors (HC-SR04) are connected to the Raspberry Pi. 
+The VCC pin of each sensor is connected to a 5V power pin, while the GND of both sensors is connected to ground on the Raspberry Pi.
+The TRIG pins are wired to GPIO 17 and 18, and the ECHO pins are connected to GPIO 23 and 24 through
+ a voltage divider using two resistors ($R_1 = 1000\,\Omega$ and $R_2 = 2000\,\Omega$) to safely reduce the 
+ signal from 5V to 3.3V. 
+}
 
 \subsubsection{Node 2}
 
