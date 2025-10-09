@@ -52,11 +52,11 @@ void getCurrentVehicleState(VehicleStateInfoType *pVehicleState)
     pthread_mutex_lock(&gVehicleState.lock);
     pVehicleState->accState = gVehicleState.info.accState;
     pVehicleState->distanceMeters = gVehicleState.info.distanceMeters;
-    pVehicleState->speedKmH = gVehicleState.info.speedKmH;
+    pVehicleState->speedMetersPerHour = gVehicleState.info.speedMetersPerHour;
     pthread_mutex_unlock(&gVehicleState.lock);
 }
 
-void setCurrentVehicleState(AccState const *pACCState, uint8_t const *pSpeedKmH, uint16_t const *pDistanceMeters)
+void setCurrentVehicleState(AccState const *pACCState, uint32_t const *pSpeedMetersPerHour, uint16_t const *pDistanceMeters)
 {
     pthread_mutex_lock(&gVehicleState.lock);
     if (pACCState != nullptr)
@@ -64,9 +64,9 @@ void setCurrentVehicleState(AccState const *pACCState, uint8_t const *pSpeedKmH,
         gVehicleState.info.accState = *pACCState;
     }
 
-    if (pSpeedKmH != nullptr)
+    if (pSpeedMetersPerHour != nullptr)
     {
-        gVehicleState.info.speedKmH = *pSpeedKmH;
+        gVehicleState.info.speedMetersPerHour = *pSpeedMetersPerHour;
 
     }
 

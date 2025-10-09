@@ -14,7 +14,7 @@ public:
 
 private:
 
-    uint8_t accFunc(uint16_t currentDistance, uint8_t currentSpeed);
+    uint32_t accFunc(uint16_t currentDistance, uint32_t currentSpeedMetersPerHour);
     DistanceReadingInfoType latestValidDistanceReading;
 };    
 }

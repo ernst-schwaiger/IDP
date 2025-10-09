@@ -179,8 +179,8 @@ void MainWindow::onSpeedUp()
     getCurrentVehicleState(&vehicleState);
 
     // Increase current speed, up to VEHICLE_SPEED_MAX
-    vehicleState.speedKmH += 5;
-    vehicleState.speedKmH = min(vehicleState.speedKmH, VEHICLE_SPEED_MAX);
+    vehicleState.speedMetersPerHour += 5000;
+    vehicleState.speedMetersPerHour = min<uint32_t>(vehicleState.speedMetersPerHour, VEHICLE_SPEED_MAX * 1000);
 
     // If ACC is turned on, turn it off now
     AccState *pAccState = nullptr;
@@ -192,10 +192,10 @@ void MainWindow::onSpeedUp()
         updateAccState(AccState::Off);
     }
 
-    // set speed in GUI
-    setSpeedKmh(vehicleState.speedKmH);
+    // set speed in GUI (calc back to kilometers per hour)
+    setSpeedKmh(vehicleState.speedMetersPerHour / 1000);
     // write back global vehicle state
-    setCurrentVehicleState(pAccState, &vehicleState.speedKmH, nullptr);
+    setCurrentVehicleState(pAccState, &vehicleState.speedMetersPerHour, nullptr);
 }
 
 void MainWindow::onSpeedDown()
@@ -204,8 +204,8 @@ void MainWindow::onSpeedDown()
     getCurrentVehicleState(&vehicleState);
 
     // Decrease current speed, not below 0
-    uint8_t speedReduction = min(vehicleState.speedKmH, static_cast<uint8_t>(5U));
-    vehicleState.speedKmH -= speedReduction;
+    uint32_t speedReduction = min(vehicleState.speedMetersPerHour, static_cast<uint32_t>(5000U));
+    vehicleState.speedMetersPerHour -= speedReduction;
 
     // If ACC is turned on, turn it off now
     AccState *pAccState = nullptr;
@@ -217,10 +217,10 @@ void MainWindow::onSpeedDown()
         updateAccState(AccState::Off);
     }
 
-    // set speed in GUI
-    setSpeedKmh(vehicleState.speedKmH);
+    // set speed in GUI (calc back to kilometers per hour)
+    setSpeedKmh(vehicleState.speedMetersPerHour / 1000);
     // write back global vehicle state
-    setCurrentVehicleState(pAccState, &vehicleState.speedKmH, nullptr);
+    setCurrentVehicleState(pAccState, &vehicleState.speedMetersPerHour, nullptr);
 }
 
 // Darstellung von ACC-Status, LED, Speed-Farbe, Alarm
@@ -289,6 +289,6 @@ void MainWindow::onSimTick()
 
     if (vehicleState.accState == AccState::On)
     {
-        setSpeedKmh(vehicleState.speedKmH);
+        setSpeedKmh(vehicleState.speedMetersPerHour / 1000);
     }
 }

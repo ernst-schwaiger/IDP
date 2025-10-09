@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <unistd.h>
 #include <Helper.h>
 #include "ACCThread.h"
@@ -35,7 +36,7 @@ void acc::ACCThread::threadLoop()
     {
         if (currentVehicleState.accState == AccState::On)
         {
-            currentVehicleState.speedKmH = accFunc(latestValidDistanceReading.distance, currentVehicleState.speedKmH);
+            currentVehicleState.speedMetersPerHour = accFunc(latestValidDistanceReading.distance, currentVehicleState.speedMetersPerHour);
         }
         
         // Comment in for debugging.
@@ -52,27 +53,27 @@ void acc::ACCThread::threadLoop()
         pAccState = &currentVehicleState.accState;
     }
 
-    uint8_t *pSpeedKmH = nullptr;
+    uint32_t *pSpeedMetersPerHour = nullptr;
     if (currentVehicleState.accState == AccState::On)
     {
-        pSpeedKmH = &currentVehicleState.speedKmH;
+        pSpeedMetersPerHour = &currentVehicleState.speedMetersPerHour;
     }
 
     // Write back new Global Vehicle State
-    setCurrentVehicleState(pAccState, pSpeedKmH, pDistanceMeters);
+    setCurrentVehicleState(pAccState, pSpeedMetersPerHour, pDistanceMeters);
 
     // Sleep 50ms
     usleep(50'000);
 }
 
-uint8_t acc::ACCThread::accFunc(uint16_t currentDistance, uint8_t currentSpeed)
+uint32_t acc::ACCThread::accFunc(uint16_t currentDistance, uint32_t currentSpeedMetersPerHour)
 {
     // FIXME: Also take the set speed of the ACC into account here!
     // "Halber Tacho"
-    uint16_t targetSpeed = currentDistance / 2;
-    int speedDifference = targetSpeed - currentSpeed;
+    uint32_t targetSpeedMetersPerHour = std::min<uint32_t>(currentDistance / 2, VEHICLE_SPEED_MAX) * 1000;
+    int64_t speedDifference = static_cast<int64_t>(targetSpeedMetersPerHour) - static_cast<int64_t>(currentSpeedMetersPerHour);
     // We assume that in each iteration, we cover 10% of the difference current speed / target speed.
-    int appliedSpeedDelta = speedDifference / 10;
-    currentSpeed = static_cast<uint16_t>(currentSpeed + appliedSpeedDelta);
-    return currentSpeed;
+    double appliedSpeedDelta = (speedDifference / 10.0);
+    currentSpeedMetersPerHour = static_cast<uint32_t>(currentSpeedMetersPerHour + appliedSpeedDelta);
+    return currentSpeedMetersPerHour;
 }
