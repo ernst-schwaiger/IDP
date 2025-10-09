@@ -9,37 +9,41 @@ When the ACC is activated, Node 2 executes a periodic task to receive distance m
 
 \begin{itemize}
 	\item CryptoComm component on Node 1 and Node 2
-	\item commThread (Tx) on Node 1
-	\item sensorThread on Node 1
-	\item commThread (Rx) on Node 2
-	\item accThread on Node 2
-	\item guiThread on Node 2
+	\item CommThread (Tx) on Node 1
+	\item SensorThread on Node 1
+	\item CommThread (Rx) on Node 2
+	\item ACCThread on Node 2
+	\item MainWindow on Node 2
 \end{itemize}
 
 \subsubsection{Safety related modules}
 \begin{enumerate}
-	\item sensorThread: \\
+	\item SensorThread: \\
 		Description: Reads distance measurement from two redundant proximity sensors on Node 1\\
-		Functions: (void *)sensorThread(void *)\\
+		Functions: void acc::SensorThread::threadLoop()\\
 		Data: gCurrentDistanceReading (write)\\
 		Requirements see: \ref{req.1}, \ref{req.2} \\
-	\item accThread: \\
-		Description: Processes received distance readings, turns ACC off and warns in case of an error \\
-		Functions: (void *)accThread(void *)\\
+	\item CommThread (Node 1): \\
+		Description: The communication thread on Node 1 sends distance readings, starts listening again if the Bluetooth connection is closed \\
+		Functions: void acc::CommThread::threadLoop()\\
 		Data: gCurrentDistanceReading (read)\\
-		Requirements see: \ref{req.4}, \ref{req.5}, \ref{req.7}, \ref{req.11}, \ref{req.12}, \ref{req.13} \\
-	\item guiThread: \\
-		Description: Informs the driver about vehicle speed, distance to the next car in front, status of the ACC \\
-		Functions: (void *)guiThread(void *)\\
-		Data: getter, setter functions shared with accThread \\
-		Requirements see: \ref{req.3}, \ref{req.6}, \ref{req.9}, \ref{req.10}, \ref{req.11} \\
-	\item commThread (Node 2): \\
+		Requirements see: \ref{req.8} \\
+	\item CommThread (Node 2): \\
 		Description: The communication thread on Node 2 receives and validates distance readings, restarts broken Bluetooth connections \\
-		Functions: (void *)commThread(void *)\\
+		Functions: void acc::CommThread::threadLoop()\\
 		Data: gCurrentDistanceReading (write)\\
 		Requirements see: \ref{req.8} \\
+	\item ACCThread: \\
+		Description: Processes received distance readings, turns ACC off if no valid readings are available and warns in case of an error \\
+		Functions: acc::ACCThread::threadLoop()\\
+		Data: gCurrentDistanceReading (read), gVehicleState(read, write)\\
+		Requirements see: \ref{req.4}, \ref{req.5}, \ref{req.7}, \ref{req.11}, \ref{req.12}, \ref{req.13} \\
+	\item MainWindow: \\
+		Description: Informs the driver about vehicle speed, distance to the next car in front, status of the ACC \\
+		Functions: void MainWindow::onSimTick()\\
+		Data: gVehicleState(read, write) \\
+		Requirements see: \ref{req.3}, \ref{req.6}, \ref{req.9}, \ref{req.10}, \ref{req.11} \\
 \end{enumerate}
-
 
 \subsubsection{Security related modules}
 
@@ -53,7 +57,13 @@ When the ACC is activated, Node 2 executes a periodic task to receive distance m
 
 \subsubsection{Modules with no influence on Safety and Security}
 
-None.
+\begin{enumerate}
+	\item Helper: \\
+		Description: contains commonly used helper functions and classes \\
+		Functions: TBD\\
+		Data: TBD\\
+		Requirements see: TBD\\
+\end{enumerate}
 
 \subsection{Libraries}
 
