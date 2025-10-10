@@ -5,25 +5,25 @@
 
 
 	\begin{enumerate}
-		\item \textbf{Threat 1:} Manipulation
+		\item \textbf{Threat 1:} Manipulation during Transmission (Tampering)
             
-            \textbf{Description:} An attacker could attempt to alter the messages transmitted between Node 1 and Node 2. This could result in false sensor data or control commands being introduced, leading to dangerous situations (e.g., incorrect distance = incorrect speed control).
+            \textbf{Description:} An attacker could attempt to alter the messages transmitted between Node 1 and Node 2. This could result in false sensor data or control commands being introduced, leading to dangerous situations (e.g., incorrect distance = incorrect speed control). The point at which the problem occurs can be seen in Figure \ref{fig:stateDiagrams} at the Bluetooth symbol.
             
-            \textbf{Solution:} Data integrity is ensured by an HMAC (hash-based message authentication code).
+            \textbf{Solution:} Data integrity is ensured by an HMAC (hash-based message authentication code). The solution process can be seen in Figure \ref{fig:stateDiagramNode1} in the “Send Sensor Msg”-block of the Comm Loop.
 %			Requirement see \ref{req.1.1} \\
         
         \paragraph{} 
 		\item \textbf{Threat 2:} Denial of Service (DoS)
             
-            \textbf{Description:} An attacker or jammer could block the Bluetooth connection (e.g., through jamming or flooding). This would render sensor data unavailable and cause the ACC to lose its basis.
+            \textbf{Description:} An attacker or jammer could block the Bluetooth connection (e.g., through jamming or flooding). This would render sensor data unavailable and cause the ACC to lose its basis. The point at which the problem occurs can be seen in Figure \ref{fig:stateDiagrams} at the Bluetooth symbol.
             
-            \textbf{Solution:} Implementation of a timeout mechanism for Bluetooth messages. If the connection fails for longer than a defined period of time, the system automatically switches to manual operation.
+            \textbf{Solution:} Implementation of a timeout mechanism for Bluetooth messages. If the connection fails for longer than a defined period of time, the system automatically switches to manual operation. The solution process can be seen in Figure \ref{fig:stateDiagramNode2} in the “Receive Ok?” block of the Comm Loop.
 %			Requirement see \ref{req.1.1} \\
         
         \paragraph{} 
-		\item \textbf{Threat 3:} Replay-Attack
+		\item \textbf{Threat 3:} Replay-Attack (Spoofing)
             
-            \textbf{Description:} An attacker could resend previously intercepted messages to Node 2 (replay). This could allow outdated but formally valid distance data to be used, leading to dangerous rule decisions.
+            \textbf{Description:} An attacker could resend previously intercepted messages to Node 2 (replay). This could allow outdated but formally valid distance data to be used, leading to dangerous rule decisions. The point at which the problem occurs can be seen in Figure \ref{fig:stateDiagramNode2} at the "Receive Sensor Msg (Blocking)"-Block of the Comm Loop.
             
             \textbf{Solution:} Use of a sequence counter or sequential message number in each packet.
 %			Requirement see \ref{req.1.1} \\
@@ -34,19 +34,19 @@
 \subsection{Identified threats without countermeasures}
 
 \begin{enumerate}
-		\item \textbf{Threat 1:} Preshared Key not protected
+		\item \textbf{Threat 1:} Preshared Key not protected (Spoofing)
 
-            \textbf{Description:} The preshared key is stored openly in the repository. If accessed by unauthorized persons, it could be used to impersonate trusted nodes. This is acceptable for the prototype stage, but proper key storage should be implemented in production.
+            \textbf{Description:} The preshared key is stored openly in the repository. If accessed by unauthorized persons, it could be used to impersonate trusted nodes. This is acceptable for the prototype stage, but proper key storage should be implemented in production. The point at which the problem occurs can be seen in Figure \ref{fig:stateDiagramNode2} at the "Receive Sensor Msg"-Block of the Comm Loop.
             
         \paragraph{}
-		\item \textbf{Threat 2:} No protection against buffer overflows
+		\item \textbf{Threat 2:} No protection against buffer overflows (Denial of Service)
         
-            \textbf{Description:} The code does not include checks to prevent buffer overflows. This could allow memory corruption or program crashes. As the focus lies on functionality, no memory-protection mechanisms are applied.
+            \textbf{Description:} The code does not include checks to prevent buffer overflows. This could allow memory corruption or program crashes. As the focus lies on functionality, no memory-protection mechanisms are applied. The point at which the problem occurs can be seen in Figure \ref{fig:stateDiagramNode2} at the "Update Distance Update Timestamp ACC = OK"-Block of the ACC Loop.
 
         \paragraph{}
-		\item \textbf{Threat 3:} Rowhammer attacks not considered
+		\item \textbf{Threat 3:} Tampering on the device (Tampering)
         
-            \textbf{Description:} Hardware-level Rowhammer attacks are not mitigated in this setup.
+            \textbf{Description:} The case where an attacker compromises the operating system of the hosts and sends forged messages on behalf of the other node is not considered. The point at which the problem occurs can be seen in Figure \ref{fig:stateDiagramNode1} at the "Send Sensor Msg"-Block of the Comm Loop.
 
 
 	\end{enumerate}
