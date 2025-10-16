@@ -17,11 +17,11 @@
             
             \textbf{Description:} An attacker or jammer could block the Bluetooth connection (e.g., through jamming or flooding). This would render sensor data unavailable and cause the ACC to lose its basis. The point at which the problem occurs can be seen in Figure \ref{fig:stateDiagrams} at the Bluetooth symbol.
             
-            \textbf{Solution:} Implementation of a timeout mechanism for Bluetooth messages. If the connection fails for longer than a defined period of time, the system automatically switches to manual operation. The solution process can be seen in Figure \ref{fig:stateDiagramNode2} in the “Receive Ok?” block of the Comm Loop.
+            \textbf{Solution:} Implementation of a timeout mechanism for Bluetooth messages. If the connection fails for longer than a defined period of time, the ACC automatically switches to manual operation. The solution process can be seen in Figure \ref{fig:stateDiagramNode2} in the “Receive Ok?” block of the Comm Loop.
 %			Requirement see \ref{req.1.1} \\
         
         \paragraph{} 
-		\item \textbf{Threat 3:} Replay-Attack (Spoofing)
+		\item \textbf{Threat 3:} Replay-Attack (Tampering)
             
             \textbf{Description:} An attacker could resend previously intercepted messages to Node 2 (replay). This could allow outdated but formally valid distance data to be used, leading to dangerous rule decisions. The point at which the problem occurs can be seen in Figure \ref{fig:stateDiagramNode2} at the "Receive Sensor Msg (Blocking)"-Block of the Comm Loop.
             
