@@ -17,8 +17,8 @@
             
             \textbf{Description:} An attacker or jammer could block the Bluetooth connection (e.g., through jamming or flooding). This would render sensor data unavailable and cause the ACC to lose its basis. The point at which the problem occurs can be seen in Figure \ref{fig:stateDiagrams} at the Bluetooth symbol.
             
-            \textbf{Solution:} Implementation of a timeout mechanism for Bluetooth messages. If the connection fails for longer than a defined period of time, the ACC automatically switches to manual operation. The solution process can be seen in Figure \ref{fig:stateDiagramNode2} in the “Receive Ok?” block of the Comm Loop.
-%			Requirement see \ref{req.1.1} \\
+            \textbf{Solution:} Implementation of a timeout mechanism for Bluetooth messages. If the connection fails for longer than a defined period of time, the ACC automatically switches to manual operation. The solution process can be seen in Figure \ref{fig:stateDiagramNode2} in the “Receive Ok?” block of the Comm Loop. \\
+			Requirement see \ref{req.5} (Safety)
         
         \paragraph{} 
 		\item \textbf{Threat 3:} Replay-Attack (Tampering)
