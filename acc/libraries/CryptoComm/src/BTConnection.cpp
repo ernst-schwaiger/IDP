@@ -4,6 +4,7 @@
 #include <span>
 #include <array>
 #include <unistd.h>
+#include <fcntl.h>
 
 using namespace std;
 
@@ -13,6 +14,7 @@ BTConnection::BTConnection(BTListenSocket *pListenSocket) :
     m_cryptoWrapper{},
     m_remote_addr{ AF_BLUETOOTH, htobs(0x1001), { 0 }, 0, 0 }
 {
+    setNonBlocking(pListenSocket->getListenSocket());
     socklen_t socklen = sizeof(m_remote_addr);
     m_socket = ::accept(pListenSocket->getListenSocket(), reinterpret_cast<struct sockaddr *>(&m_remote_addr), &socklen);
 
@@ -27,6 +29,7 @@ BTConnection::BTConnection(char const *remoteMAC) :
     m_remote_addr{ AF_BLUETOOTH, htobs(0x1001), { 0 }, 0, 0 }
 {
     m_socket = socket(AF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_L2CAP);
+    setNonBlocking(m_socket);
     ::str2ba( remoteMAC, &m_remote_addr.l2_bdaddr );
     if (::connect(m_socket, reinterpret_cast<struct sockaddr *>(&m_remote_addr), sizeof(m_remote_addr)) < 0)
     {
@@ -43,35 +46,59 @@ ssize_t BTConnection::sendLocalRandom(void) noexcept
     return send(msgPayload);
 }
 
-void BTConnection::keyExchangeClient(void)
+bool BTConnection::keyExchangeClient(void)
 {
+    bool ret = true;
     // Determine session key
     array<uint8_t, 33> remoteKeyMsg;
     sendLocalRandom();
+    usleep(1'000'000U);
     ssize_t remoteRandom = receive(remoteKeyMsg);
-    if ((remoteRandom != 33) || (remoteKeyMsg[0] != 0))
+
+    // key exchange message response from server did not arrive yet
+    if ((remoteRandom < 0) && ((errno == EAGAIN) || (errno == EWOULDBLOCK)))
     {
-        throw runtime_error("Received incorrect random message from server");
+        ret = false;
+    }
+    else
+    {
+        // incorrect payload received, reset, restart connection
+        if ((remoteRandom != 33U) || (remoteKeyMsg[0] != 0U))
+        {
+            throw runtime_error("Received incorrect random message from server");
+        }
+        // Successful reception
+        m_cryptoWrapper.generateSessionKey({ &remoteKeyMsg[1], remoteKeyMsg.size() - 1});
     }
 
-    m_cryptoWrapper.generateSessionKey({ &remoteKeyMsg[1], remoteKeyMsg.size() - 1});
-
-    // FIXME: Send an ack that the remote rnd number arrived sccessfully
+    return ret;
 }
 
-void BTConnection::keyExchangeServer(void)
+bool BTConnection::keyExchangeServer(void)
 {
+    bool ret = true;
+
     // Determine session key
     array<uint8_t, 33> remoteKeyMsg;
     ssize_t remoteRandom = receive(remoteKeyMsg);
-    if ((remoteRandom != 33) || (remoteKeyMsg[0] != 0))
+
+    if ((remoteRandom < 0) && ((errno == EAGAIN) || (errno == EWOULDBLOCK)))
     {
-        throw runtime_error("Received incorrect random message from server");
+        ret = false;
     }
-    sendLocalRandom();
-    m_cryptoWrapper.generateSessionKey({ &remoteKeyMsg[1], remoteKeyMsg.size() - 1});
-    
-    // FIXME: Receive an ack to ensure that the local rnd number arrived at the remote node
+    else
+    {
+        if ((remoteRandom != 33) || (remoteKeyMsg[0] != 0))
+        {
+            throw runtime_error("Received incorrect random message from server");
+        }
+        sendLocalRandom();
+        m_cryptoWrapper.generateSessionKey({ &remoteKeyMsg[1], remoteKeyMsg.size() - 1});
+    }
+
+    usleep(500'000U);
+
+    return ret;
 }
 
 ssize_t BTConnection::send(std::span<const uint8_t> txData) noexcept
@@ -120,7 +147,10 @@ ssize_t BTConnection::receiveWithCounterAndMAC(uint8_t &msgType, std::span<uint8
 
     if (rxMsgLen < 0)
     {
-        throw runtime_error ("Failed to receive data");
+        if ((errno != EAGAIN) && (errno != EWOULDBLOCK))
+        {
+            throw runtime_error ("Failed to receive data");
+        }
     }
 
     if (rxMsgLen <= overheadLength)
@@ -140,7 +170,7 @@ ssize_t BTConnection::receiveWithCounterAndMAC(uint8_t &msgType, std::span<uint8
     if (verifyCounter)
     {
         // if the counter value must be verified (at Node 2), only messages 
-        // with identical counter are accepted
+        // with identical or higher counter are accepted
         if (counter >= remoteCounter)
         {
             return -1;
@@ -176,6 +206,12 @@ void BTConnection::serializeUint32(uint8_t *pBuf, uint32_t val) const
 uint32_t BTConnection::deSerializeUint32(uint8_t const *pBuf) const
 {
     return (pBuf[0] << 24) | (pBuf[1] << 16) | (pBuf[2] << 8) | pBuf[3];
+}
+
+void BTConnection::setNonBlocking(int socketHandle) const
+{
+    int flags = fcntl(socketHandle, F_GETFL, 0); 
+    fcntl(socketHandle, F_SETFL, flags | O_NONBLOCK);
 }
 
 BTConnection::~BTConnection(void)

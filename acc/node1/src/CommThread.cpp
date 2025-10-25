@@ -32,8 +32,16 @@ void acc::CommThread::commLoop(acc::BTListenSocket &listenSocket)
     acc::BTConnection conn(&listenSocket);
     
     // Set up session key
-    conn.keyExchangeServer();
-    cout << "Connection to client established.\n";
+    bool keyExChangeFinished = false;
+    while (!terminateApp() && !keyExChangeFinished)
+    {
+        keyExChangeFinished = conn.keyExchangeServer();
+    }
+
+    if (!terminateApp())
+    {
+        cout << "Connection to client established.\n";
+    }
 
     long baselineMs = getTimestampMs();
 

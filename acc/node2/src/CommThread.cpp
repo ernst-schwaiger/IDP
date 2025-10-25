@@ -1,5 +1,6 @@
 #include <stdexcept>
 #include <iostream>
+#include <unistd.h>
 
 #include <BTConnection.h>
 #include <Helper.h>
@@ -37,8 +38,12 @@ void acc::CommThread::commLoop(char const *remoteMAC)
     // At this point, we have a connection set up
     cout << "Connection to " << remoteMAC << " established.\n";
     
-    // Create session key
-    conn.keyExchangeClient();
+    // Set up session key
+    bool keyExChangeFinished = false;
+    while (!terminateApp() && !keyExChangeFinished)
+    {
+        keyExChangeFinished = conn.keyExchangeClient();
+    }
 
     // counter;  a timestamp indicating the ms since the Bluetooth connection
     // was established between Node 1, Node 2
@@ -59,6 +64,7 @@ void acc::CommThread::commLoop(char const *remoteMAC)
             }
         }
 
-        // no sleep required here; we block in the receive function
+        // Sleep 1ms, minimize latency of receiving reading message
+        usleep(1'000);        
     }
 }

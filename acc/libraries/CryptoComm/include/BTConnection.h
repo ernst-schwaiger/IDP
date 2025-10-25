@@ -23,8 +23,8 @@ public:
     BTConnection(char const *remoteMAC);
     ~BTConnection(void);
 
-    void keyExchangeClient(void);
-    void keyExchangeServer(void);
+    [[ nodiscard ]] bool keyExchangeClient(void);
+    [[ nodiscard ]] bool keyExchangeServer(void);
 
     ssize_t sendLocalRandom(void) noexcept;
 
@@ -38,6 +38,8 @@ private:
 
     void serializeUint32(uint8_t *pBuf, uint32_t val) const;
     uint32_t deSerializeUint32(uint8_t const *pBuf) const;
+    void setNonBlocking(int socketHandle) const;
+
 
     CryptoWrapper m_cryptoWrapper;
     int m_socket;
