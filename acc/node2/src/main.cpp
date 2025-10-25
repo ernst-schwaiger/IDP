@@ -82,13 +82,13 @@ void setCurrentVehicleState(AccState const *pACCState, uint32_t const *pSpeedMet
     pthread_mutex_unlock(&gVehicleState.lock);
 }
 
-static void *accThreadFunc(void *arg)
+static void *accThreadFunc(void *)
 {
-    ACCThread *t = reinterpret_cast<ACCThread *>(arg);
+    ACCThread t(gTerminateApplication);
 
     try
     {
-        t->run();
+        t.run();
     }
     catch(runtime_error const &e)
     {
@@ -108,11 +108,13 @@ static void *accThreadFunc(void *arg)
 
 static void *commThreadFunc(void *arg)
 {
-    CommThread *t = reinterpret_cast<CommThread *>(arg);
+    char *remoteMAC = reinterpret_cast<char *>(arg);
+
+    CommThread t(gTerminateApplication, remoteMAC);
     
     try
     {
-        t->run();
+        t.run();
     }
     catch(runtime_error const &e)
     {
@@ -130,38 +132,6 @@ static void *commThreadFunc(void *arg)
     return nullptr;
 }
 
-static int startThreads(optional<pthread_t> &commThreadHandle, optional<pthread_t> &accThreadHandle, int argc, char *argv[])
-{
-    // Start Comm thread
-    CommThread commThread(gTerminateApplication, argv[1]);
-    pthread_t tmpThreadHandle;
-    if (pthread_create(&tmpThreadHandle, NULL, commThreadFunc, &commThread))
-    {
-        cerr << "Error creating acc thread\n";
-        return 1;
-    }
-    commThreadHandle = tmpThreadHandle;
-
-    // Start ACC thread
-    ACCThread accThread(gTerminateApplication);
-    if (pthread_create(&tmpThreadHandle, NULL, accThreadFunc, &accThread))
-    {
-        cerr << "Error creating acc thread\n";
-        return 1;
-    }
-    accThreadHandle = tmpThreadHandle;
-
-    // Init GUI, start GUI thread
-    qputenv("QT_AUTO_SCREEN_SCALE_FACTOR", QByteArray("0"));
-    qputenv("QT_SCALE_FACTOR", QByteArray("1"));
-    QApplication app(argc, argv);
-    MainWindow w(gTerminateApplication);
-    w.resize(760, 440);
-    w.show();
-    
-    // QT requires the app to run in the main thread.
-    return app.exec();
-}
 
 int main(int argc, char *argv[])
 {
@@ -179,7 +149,39 @@ int main(int argc, char *argv[])
 
     try
     {
-        ret = startThreads(optCommThreadHandle, optAccThreadHandle, argc, argv);
+        pthread_t tmpThreadHandle;
+        // Start comm thread
+        if (pthread_create(&tmpThreadHandle, nullptr, commThreadFunc, argv[1]))
+        {
+            cerr << "Error creating acc thread\n";
+            ret = 1;
+        }
+        else
+        {
+            optCommThreadHandle = tmpThreadHandle;
+
+            // Start ACC thread
+            if (pthread_create(&tmpThreadHandle, nullptr, accThreadFunc, nullptr))
+            {
+                cerr << "Error creating acc thread\n";
+                ret = 1;
+            }
+            else
+            {
+                optAccThreadHandle = tmpThreadHandle;
+                
+                // Init GUI
+                qputenv("QT_AUTO_SCREEN_SCALE_FACTOR", QByteArray("0"));
+                qputenv("QT_SCALE_FACTOR", QByteArray("1"));
+                QApplication app(argc, argv);
+                MainWindow w(gTerminateApplication);
+                w.resize(760, 440);
+                w.show();
+                
+                // QT requires the app to run in the main thread.
+                ret = app.exec();                
+            }
+        }
     }
     catch(runtime_error const &e)
     {
