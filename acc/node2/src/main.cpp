@@ -195,17 +195,20 @@ int main(int argc, char *argv[])
 
     // signal all threads to stop
     gTerminateApplication = true;
+    cout << "Shutting down node2...\n";
 
     // collect threads
+    if (optAccThreadHandle.has_value())
+    {
+        cout << "Joining acc thread...\n";
+        pthread_join(*optAccThreadHandle, NULL);
+    }
+
     if (optCommThreadHandle.has_value())
     {
+        cout << "Joining comm thread...\n";
         pthread_join(*optCommThreadHandle, NULL);
     }
 
-    if (optAccThreadHandle.has_value())
-    {
-        pthread_join(*optAccThreadHandle, NULL);
-    }
-    
     return ret;
 }
