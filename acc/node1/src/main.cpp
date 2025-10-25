@@ -10,34 +10,43 @@
 using namespace std;
 using namespace acc;
 
+typedef struct
+{
+    uint16_t distance;
+    pthread_mutex_t lock;
+} DistanceReadingType;
+
+static constexpr uint16_t DISTANCE_READING_ERROR_2 = 65535U;
+
 // global var, written by the sensor thread, read by the communication thread
-volatile uint16_t gCurrentDistanceReading = 0xffff;
+DistanceReadingType gCurrentDistanceReading = { DISTANCE_READING_ERROR_2, PTHREAD_MUTEX_INITIALIZER };
 
 // global app termination flag; no critical sections required
 bool gTerminateApplication = false;
 
 
-uint16_t getCurrentDistanceReading(pthread_mutex_t *pLock)
+uint16_t getCurrentDistanceReading()
 {
-    pthread_mutex_lock(pLock);
-    uint16_t currentReading = gCurrentDistanceReading;
-    pthread_mutex_unlock(pLock);
+    pthread_mutex_lock(&gCurrentDistanceReading.lock);
+    uint16_t currentReading = gCurrentDistanceReading.distance;
+    pthread_mutex_unlock(&gCurrentDistanceReading.lock);
     return currentReading;
 }
 
-void setCurrentDistanceReading(pthread_mutex_t *pLock, uint16_t value)
+void setCurrentDistanceReading(uint16_t value)
 {
-    pthread_mutex_lock(pLock);
-    gCurrentDistanceReading = value;
-    pthread_mutex_unlock(pLock);
+    pthread_mutex_lock(&gCurrentDistanceReading.lock);
+    gCurrentDistanceReading.distance = value;
+    pthread_mutex_unlock(&gCurrentDistanceReading.lock);
 }
 
-static void *sensorThreadFunc(void *arg)
+static void *sensorThreadFunc(void *)
 {
-    SensorThread *pSensorThread = reinterpret_cast<SensorThread *>(arg);
+    SensorThread t(gTerminateApplication);
+
     try
     {
-        pSensorThread->run();
+        t.run();
     }
     catch(const std::exception& e)
     {
@@ -64,13 +73,9 @@ int main()
 
     try
     {
-        // mutex for setting up the critical section
-        pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-
         // Start Sensor thread
-        SensorThread sensorThread(gTerminateApplication, &lock);
         pthread_t sensorThreadHandle;
-        if (pthread_create(&sensorThreadHandle, NULL, sensorThreadFunc, &sensorThread)) 
+        if (pthread_create(&sensorThreadHandle, nullptr, sensorThreadFunc, nullptr)) 
         {
             cerr << "Error creating sensor thread\n";
             ret = 1;
@@ -79,7 +84,7 @@ int main()
         {
             optSensorThreadHandle = sensorThreadHandle;
             // ...this leaves the Communication Thread :)
-            acc::CommThread commThread(gTerminateApplication, &lock);
+            acc::CommThread commThread(gTerminateApplication);
             commThread.run();
         }
     }

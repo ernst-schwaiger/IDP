@@ -22,7 +22,7 @@ void acc::SensorThread::run(void)
         uint16_t nextReadingVal = static_cast<uint16_t>(floor(d));
         
         // Critical section start, take care that no exception can be thrown in it!
-        setCurrentDistanceReading(m_pthreadArg, nextReadingVal);
+        setCurrentDistanceReading(nextReadingVal);
         
         // Sleep 50ms
         usleep(50'000);

@@ -15,7 +15,7 @@ void acc::CommThread::run(void)
     {
         try
         {
-            commLoop(m_listenSocket, m_pthreadArg);
+            commLoop(m_listenSocket);
         }
         catch(runtime_error const &e)
         {
@@ -25,7 +25,7 @@ void acc::CommThread::run(void)
     }
 }
 
-void acc::CommThread::commLoop(acc::BTListenSocket &listenSocket, pthread_mutex_t *pLock)
+void acc::CommThread::commLoop(acc::BTListenSocket &listenSocket)
 {
     uint32_t numTxFails = 0;
     uint32_t numTxSuccess = 0;
@@ -39,7 +39,7 @@ void acc::CommThread::commLoop(acc::BTListenSocket &listenSocket, pthread_mutex_
 
     while (!terminateApp()) // we leave this one only via failed send/receive operations
     {
-        uint16_t currentDistanceReading = getCurrentDistanceReading(pLock);
+        uint16_t currentDistanceReading = getCurrentDistanceReading();
         uint8_t readingToTransmit[sizeof(currentDistanceReading)];
         readingToTransmit[0] = currentDistanceReading >> 8;
         readingToTransmit[1] = currentDistanceReading & 0xff;
