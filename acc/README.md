@@ -146,7 +146,6 @@ See also:
 
 ## TODOs
 
-- Discuss in Stride Session: Is encryption needed for bluetooth comm, or is MAC with counter sufficient?
 - Implement storage of maximum speed acc speed once ACC is turned on. (Lorenzo)
 - Implement turning off ACC if speed gets below 30 kmH (Lorenzo)
 - Business logic in GUI: If acc switches from failed to operable state, the state shall be always ("off") (instead of the state of the acc button). (Lorenzo)
@@ -157,3 +156,4 @@ See also:
 - Run MISRA checks on our code using cppcheck. (Ernst)
 - Use proper data types in GUI: uint32_t for speed in m/s, uint16_t for distance (avoid signed data types) (Lorenzo)
 - Clarify WLAN router issue in lab (Stefan)
+- Add requirement references to production code (All)

@@ -21,12 +21,12 @@ public:
     BTConnection(BTListenSocket *pListenSocket);
     // Client constructor
     BTConnection(char const *remoteMAC);
-    ~BTConnection();
+    ~BTConnection(void);
 
-    void keyExchangeClient();
-    void keyExchangeServer();
+    void keyExchangeClient(void);
+    void keyExchangeServer(void);
 
-    ssize_t sendLocalRandom() noexcept;
+    ssize_t sendLocalRandom(void) noexcept;
 
     ssize_t send(std::span<const uint8_t> txData) noexcept;
     ssize_t receive(std::span<uint8_t> rxData) noexcept;

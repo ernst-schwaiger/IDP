@@ -1,18 +1,20 @@
 #pragma once
 
+#include <cstdint>
+
 namespace acc
 {
 
 class Sensor
 {
 public:
-    Sensor(int trigPin, int echoPin);
-    ~Sensor();
-    double getDistanceCm();
+    Sensor(uint8_t trigPin, uint8_t echoPin);
+    ~Sensor(void);
+    double getDistanceCm(void);
 
 private:
-    int trigPin;
-    int echoPin;
+    uint8_t trigPin;
+    uint8_t echoPin;
 };
 
 } // namespace acc

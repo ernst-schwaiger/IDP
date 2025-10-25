@@ -8,9 +8,9 @@ namespace acc
 class CommThread : public ThreadWrapper<char>
 {
 public:
-    CommThread(char *pRemoteMAC) : ThreadWrapper(pRemoteMAC) {}
-    virtual ~CommThread() {}
-    virtual void threadLoop();
+    CommThread(bool &terminateApp, char *pRemoteMAC) : ThreadWrapper(terminateApp, pRemoteMAC) {}
+    virtual ~CommThread(void) {}
+    virtual void run(void);
 
 private:
     void commLoop(char const *remoteMAC);

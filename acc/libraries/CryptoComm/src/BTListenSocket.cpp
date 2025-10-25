@@ -9,7 +9,7 @@ using namespace std;
 namespace acc
 {
 
-BTListenSocket::BTListenSocket() : 
+BTListenSocket::BTListenSocket(void) : 
     m_local_addr{ AF_BLUETOOTH, htobs(0x1001), { 0 }, 0, 0 }
 {
     makeBTDeviceVisible();
@@ -29,13 +29,13 @@ BTListenSocket::BTListenSocket() :
     ::listen(m_listenSocket, 1);
 }
 
-BTListenSocket::~BTListenSocket()
+BTListenSocket::~BTListenSocket(void)
 {
     close(m_listenSocket);
 }
 
 // This is the same as "bluetoothctrl discoverable yes"
-void BTListenSocket::makeBTDeviceVisible()
+void BTListenSocket::makeBTDeviceVisible(void)
 {
     GError *error = nullptr;
     GDBusConnection *connection = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, &error);

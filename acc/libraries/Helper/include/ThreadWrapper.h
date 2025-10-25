@@ -6,28 +6,21 @@ template<typename T>
 class ThreadWrapper
 {
 public:
-    explicit ThreadWrapper(T *pThreadArg) : m_pthreadArg(pThreadArg), m_terminate(false) {}
+    explicit ThreadWrapper(bool &terminateApp, T *pThreadArg) : m_pthreadArg(pThreadArg), m_bterminateApp(terminateApp) {}
+    virtual ~ThreadWrapper(void) {};
     
-    void run()
-    {
-        while (!m_terminate)
-        {
-            threadLoop();
-        }
-    }
-
-    virtual void threadLoop() = 0;
-
-    virtual ~ThreadWrapper()
-    {
-        // cleanup code goes here
-    }
+    virtual void run(void) = 0;
 
 protected:
+    bool terminateApp()
+    {
+        return m_bterminateApp;
+    }
+
     T *m_pthreadArg;
 
 private:
-    bool m_terminate;
+    bool &m_bterminateApp;
 };
 
 } // namespace acc

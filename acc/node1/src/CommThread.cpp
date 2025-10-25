@@ -9,12 +9,14 @@
 using namespace std;
 using namespace acc;
 
-void acc::CommThread::threadLoop()
+void acc::CommThread::run(void)
 {
     try
     {
-        // Run the loop (currently only in one thread)
-        commLoop(m_listenSocket, m_pthreadArg);
+        while (!terminateApp())
+        {
+            commLoop(m_listenSocket, m_pthreadArg);
+        }
     }
     catch(runtime_error const &e)
     {
@@ -35,7 +37,7 @@ void acc::CommThread::commLoop(acc::BTListenSocket &listenSocket, pthread_mutex_
 
     long baselineMs = getTimestampMs();
 
-    while (1) // we leave this one only via failed send/receive operations
+    while (!terminateApp()) // we leave this one only via failed send/receive operations
     {
         uint16_t currentDistanceReading = getCurrentDistanceReading(pLock);
         uint8_t readingToTransmit[sizeof(currentDistanceReading)];

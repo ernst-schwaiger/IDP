@@ -13,8 +13,8 @@ inline int clamp(int v, int lo, int hi) { return std::min(hi, std::max(lo, v)); 
 
 using namespace std;
 
-MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), ui(new Ui::MainWindow)
+MainWindow::MainWindow(bool &bTerminateApp, QWidget *parent)
+    : QMainWindow(parent), ui(new Ui::MainWindow), bTerminateApp_(bTerminateApp)
 {
     ui->setupUi(this);
 
@@ -290,5 +290,10 @@ void MainWindow::onSimTick()
     if (vehicleState.accState == AccState::On)
     {
         setSpeedKmh(vehicleState.speedMetersPerHour / 1000);
+    }
+
+    if (bTerminateApp_)
+    {
+        QApplication::quit();
     }
 }

@@ -9,17 +9,17 @@ namespace acc
 class BTListenSocket
 {
 public:
-    BTListenSocket();
-    ~BTListenSocket();
+    BTListenSocket(void);
+    ~BTListenSocket(void);
 
-    int getListenSocket() const
+    int getListenSocket(void) const
     {
         return m_listenSocket;
     }
 
 private:
 
-    void makeBTDeviceVisible();
+    void makeBTDeviceVisible(void);
     
     int m_listenSocket;
     struct sockaddr_l2 m_local_addr;

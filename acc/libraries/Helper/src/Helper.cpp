@@ -6,7 +6,7 @@
 namespace acc
 {
 
-uint64_t getTimestampMs()
+uint64_t getTimestampMs(void)
 {
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);

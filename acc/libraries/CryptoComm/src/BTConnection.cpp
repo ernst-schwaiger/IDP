@@ -34,7 +34,7 @@ BTConnection::BTConnection(char const *remoteMAC) :
     }            
 }
 
-ssize_t BTConnection::sendLocalRandom() noexcept
+ssize_t BTConnection::sendLocalRandom(void) noexcept
 {
     array<uint8_t, 33> msgPayload;
     array<uint8_t, 32> const &localRandom = m_cryptoWrapper.getLocalRandomNumber();
@@ -43,7 +43,7 @@ ssize_t BTConnection::sendLocalRandom() noexcept
     return send(msgPayload);
 }
 
-void BTConnection::keyExchangeClient()
+void BTConnection::keyExchangeClient(void)
 {
     // Determine session key
     array<uint8_t, 33> remoteKeyMsg;
@@ -59,7 +59,7 @@ void BTConnection::keyExchangeClient()
     // FIXME: Send an ack that the remote rnd number arrived sccessfully
 }
 
-void BTConnection::keyExchangeServer()
+void BTConnection::keyExchangeServer(void)
 {
     // Determine session key
     array<uint8_t, 33> remoteKeyMsg;
@@ -178,7 +178,7 @@ uint32_t BTConnection::deSerializeUint32(uint8_t const *pBuf) const
     return (pBuf[0] << 24) | (pBuf[1] << 16) | (pBuf[2] << 8) | pBuf[3];
 }
 
-BTConnection::~BTConnection()
+BTConnection::~BTConnection(void)
 {
     close(m_socket);
 }

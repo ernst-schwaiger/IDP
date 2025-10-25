@@ -12,7 +12,7 @@ QT_END_NAMESPACE
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
-    explicit MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(bool &bTerminateApp, QWidget *parent = nullptr);
     ~MainWindow();
 
 public slots:
@@ -36,6 +36,7 @@ private:
     void showAlarm(bool on);         // ggf. später für Alarm-Frame
 
     Ui::MainWindow *ui;
+    bool &bTerminateApp_;
 
     int  currentSpeed_  = 0;
     bool accAvailable_  = true;

@@ -10,8 +10,8 @@ namespace acc
 class CryptoWrapper
 {
 public:
-    CryptoWrapper();
-    ~CryptoWrapper();
+    CryptoWrapper(void);
+    ~CryptoWrapper(void) {};
 
     void generateSessionKey(std::span<uint8_t const> remoteRandomNumber);
 

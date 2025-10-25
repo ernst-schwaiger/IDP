@@ -1,4 +1,5 @@
 #include <iostream>
+#include <optional>
 #include <QApplication>
 #include <CryptoComm.h>
 
@@ -17,14 +18,17 @@ typedef struct
 } VehicleStateType;
 
 // constants
-constexpr uint16_t DISTANCE_READING_ERROR_1 = 65534U;
-constexpr uint16_t DISTANCE_READING_ERROR_2 = 65535U;
+static constexpr uint16_t DISTANCE_READING_ERROR_1 = 65534U;
+static constexpr uint16_t DISTANCE_READING_ERROR_2 = 65535U;
 
 // global var, written by the sensor thread, read by the acc thread, shall only be accessed via get/set functions
 DistanceReadingType gCurrentDistanceReading = { { 0UL, 0xffff}, PTHREAD_MUTEX_INITIALIZER };
 
 // global vehicle state, read and written by acc thread and GUI/main thread, shall only be accessed via get/set functions
 VehicleStateType gVehicleState = { {AccState::Off, 0, 0 }, PTHREAD_MUTEX_INITIALIZER};
+
+// global app termination flag; no critical sections required
+bool gTerminateApplication = false;
 
 void getCurrentDistanceReading(DistanceReadingInfoType *pReading)
 {
@@ -81,19 +85,90 @@ void setCurrentVehicleState(AccState const *pACCState, uint32_t const *pSpeedMet
 static void *accThreadFunc(void *arg)
 {
     ACCThread *t = reinterpret_cast<ACCThread *>(arg);
-    t->run();
-    return nullptr; // wont be reached
+
+    try
+    {
+        t->run();
+    }
+    catch(runtime_error const &e)
+    {
+        cerr << "Runtime Exception: " << e.what() << '\n';
+        perror("Error message: ");
+    }
+    catch(...)
+    {
+        cerr << "Unknown exception occurred.\n";
+    }
+
+    // signal other threads to stop
+    gTerminateApplication = true;
+    
+    return nullptr;
 }
 
 static void *commThreadFunc(void *arg)
 {
     CommThread *t = reinterpret_cast<CommThread *>(arg);
-    t->run();
-    return nullptr; // wont be reached
+    
+    try
+    {
+        t->run();
+    }
+    catch(runtime_error const &e)
+    {
+        cerr << "Runtime Exception: " << e.what() << '\n';
+        perror("Error message: ");
+    }
+    catch(...)
+    {
+        cerr << "Unknown exception occurred.\n";
+    }
+
+    // signal other threads to stop
+    gTerminateApplication = true;
+
+    return nullptr;
+}
+
+static int startThreads(optional<pthread_t> &commThreadHandle, optional<pthread_t> &accThreadHandle, int argc, char *argv[])
+{
+    // Start Comm thread
+    CommThread commThread(gTerminateApplication, argv[1]);
+    pthread_t tmpThreadHandle;
+    if (pthread_create(&tmpThreadHandle, NULL, commThreadFunc, &commThread))
+    {
+        cerr << "Error creating acc thread\n";
+        return 1;
+    }
+    commThreadHandle = tmpThreadHandle;
+
+    // Start ACC thread
+    ACCThread accThread(gTerminateApplication);
+    if (pthread_create(&tmpThreadHandle, NULL, accThreadFunc, &accThread))
+    {
+        cerr << "Error creating acc thread\n";
+        return 1;
+    }
+    accThreadHandle = tmpThreadHandle;
+
+    // Init GUI, start GUI thread
+    qputenv("QT_AUTO_SCREEN_SCALE_FACTOR", QByteArray("0"));
+    qputenv("QT_SCALE_FACTOR", QByteArray("1"));
+    QApplication app(argc, argv);
+    MainWindow w(gTerminateApplication);
+    w.resize(760, 440);
+    w.show();
+    
+    // QT requires the app to run in the main thread.
+    return app.exec();
 }
 
 int main(int argc, char *argv[])
 {
+    int ret = 0;
+    optional<pthread_t> optCommThreadHandle;
+    optional<pthread_t> optAccThreadHandle;
+
     if (argc != 2)
     {
         cerr << "Usage: " << argv[0] << "<MAC_ADDR_NODE1>\n";
@@ -102,32 +177,35 @@ int main(int argc, char *argv[])
 
     cout << "Node 2 started.\n";
 
-    // Start Comm thread
-    CommThread commThread(argv[1]);
-    pthread_t commThreadHandle;
-    if (pthread_create(&commThreadHandle, NULL, commThreadFunc, &commThread))
+    try
     {
-        cerr << "Error creating acc thread\n";
-        return 1;
-    }    
-
-    // Start ACC thread
-    ACCThread accThread;
-    pthread_t accThreadHandle;
-    if (pthread_create(&accThreadHandle, NULL, accThreadFunc, &accThread))
+        ret = startThreads(optCommThreadHandle, optAccThreadHandle, argc, argv);
+    }
+    catch(runtime_error const &e)
     {
-        cerr << "Error creating acc thread\n";
-        return 1;
+        cerr << "Runtime Exception: " << e.what() << '\n';
+        perror("Error message: ");
+        ret = -1;
+    }
+    catch(...)
+    {
+        cerr << "Unknown exception occurred.\n";
+        ret = -1;
     }
 
-    // Init GUI, start GUI thread
-    qputenv("QT_AUTO_SCREEN_SCALE_FACTOR", QByteArray("0"));
-    qputenv("QT_SCALE_FACTOR", QByteArray("1"));
-    QApplication app(argc, argv);
-    MainWindow w;
-    w.resize(760, 440);
-    w.show();
+    // signal all threads to stop
+    gTerminateApplication = true;
+
+    // collect threads
+    if (optCommThreadHandle.has_value())
+    {
+        pthread_join(*optCommThreadHandle, NULL);
+    }
+
+    if (optAccThreadHandle.has_value())
+    {
+        pthread_join(*optAccThreadHandle, NULL);
+    }
     
-    // QT requires the app to run in the main thread.
-    return app.exec();
+    return ret;
 }

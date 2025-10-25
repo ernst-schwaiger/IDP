@@ -9,15 +9,13 @@
 using namespace std;
 using namespace acc;
 
-void acc::CommThread::threadLoop()
+void acc::CommThread::run(void)
 {
-    char const *pRemoteMAC = m_pthreadArg;
-
-    while (1)
+    while (!terminateApp())
     {
         try
         {
-            commLoop(pRemoteMAC);
+            commLoop(m_pthreadArg);
         }
         catch(const runtime_error &e)
         {
@@ -28,7 +26,7 @@ void acc::CommThread::threadLoop()
         {
             cerr << "Unknown exception occurred.\n";
         }
-    }    
+    } 
 }
 
 void acc::CommThread::commLoop(char const *remoteMAC)
@@ -46,7 +44,7 @@ void acc::CommThread::commLoop(char const *remoteMAC)
     // was established between Node 1, Node 2
     uint32_t counter = 0;
 
-    while (1)
+    while (!terminateApp())
     {
         uint8_t msgType;
         // buffer for sending and receiving messages

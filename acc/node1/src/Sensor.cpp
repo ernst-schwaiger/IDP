@@ -18,7 +18,7 @@ using namespace std;
 namespace acc
 {
 
-Sensor::Sensor(int trigPin, int echoPin) : trigPin(trigPin), echoPin(echoPin)
+Sensor::Sensor(uint8_t trigPin, uint8_t echoPin) : trigPin(trigPin), echoPin(echoPin)
 {
 #ifdef PROXIMITY_SENSORS_MOUNTED
     int rc = gpioInitialise();
@@ -37,14 +37,14 @@ Sensor::Sensor(int trigPin, int echoPin) : trigPin(trigPin), echoPin(echoPin)
 #endif
 }
 
-Sensor::~Sensor()
+Sensor::~Sensor(void)
 {
 #ifdef PROXIMITY_SENSORS_MOUNTED    
     gpioTerminate();
 #endif
 }
 
-double Sensor::getDistanceCm() 
+double Sensor::getDistanceCm(void) 
 {
 #ifdef PROXIMITY_SENSORS_MOUNTED
     gpioWrite(trigPin, 1);

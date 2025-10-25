@@ -19,7 +19,7 @@ const array<uint8_t, 32> CryptoWrapper::PRE_SHARED_KEY =
     0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
 };
 
-CryptoWrapper::CryptoWrapper()
+CryptoWrapper::CryptoWrapper(void)
 {
     crypt_mp_init("LibTomMath");
     if (register_hash(&sha256_desc) != CRYPT_OK)
@@ -139,9 +139,4 @@ uint8_t CryptoWrapper::verifyHMAC(std::span<uint8_t const> data, std::span<uint8
 
     return 0; // FIXME: Implement
 }
-
-CryptoWrapper::~CryptoWrapper()
-{
-}
-
 }
