@@ -97,10 +97,12 @@ int main()
 
     // signal all threads to stop
     gTerminateApplication = true;
+    cout << "Shutting down node1...\n";
 
     // collect sensor thread
     if (optSensorThreadHandle.has_value())
     {
+        cout << "Joining sensor thread...\n";
         pthread_join(*optSensorThreadHandle, NULL);
     }
 

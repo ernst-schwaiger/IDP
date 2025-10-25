@@ -11,17 +11,17 @@ using namespace acc;
 
 void acc::CommThread::run(void)
 {
-    try
+    while (!terminateApp())
     {
-        while (!terminateApp())
+        try
         {
             commLoop(m_listenSocket, m_pthreadArg);
         }
-    }
-    catch(runtime_error const &e)
-    {
-        cerr << "Runtime Exception: " << e.what() << '\n';
-        perror("Error message: ");
+        catch(runtime_error const &e)
+        {
+            cerr << "Runtime Exception: " << e.what() << '\n';
+            perror("Error message: ");
+        }
     }
 }
 
