@@ -5,6 +5,7 @@
 #include <array>
 #include <unistd.h>
 #include <fcntl.h>
+#include <poll.h>
 
 using namespace std;
 
@@ -14,13 +15,31 @@ BTConnection::BTConnection(BTListenSocket *pListenSocket) :
     m_cryptoWrapper{},
     m_remote_addr{ AF_BLUETOOTH, htobs(0x1001), { 0 }, 0, 0 }
 {
-    setNonBlocking(pListenSocket->getListenSocket());
     socklen_t socklen = sizeof(m_remote_addr);
     m_socket = ::accept(pListenSocket->getListenSocket(), reinterpret_cast<struct sockaddr *>(&m_remote_addr), &socklen);
-
     if (m_socket < 0)
     {
         throw std::runtime_error("failed to open bluetooth client socket");
+    }
+    setNonBlocking(m_socket);
+
+    // Prepare poll structure
+    struct pollfd pfd = { m_socket, POLLIN | POLLOUT, 0 };
+
+    // Wait for readiness, at most one sec
+    while(1)
+    {
+        if (poll(&pfd, 1, 1000) <= 0)
+        {
+            throw std::runtime_error("failed to poll bluetooth server socket");
+        }
+        else
+        {
+            if ((pfd.revents & POLLIN) && (pfd.revents & POLLOUT))
+            {
+                break;
+            }
+        }
     }
 }
 
@@ -29,12 +48,32 @@ BTConnection::BTConnection(char const *remoteMAC) :
     m_remote_addr{ AF_BLUETOOTH, htobs(0x1001), { 0 }, 0, 0 }
 {
     m_socket = socket(AF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_L2CAP);
-    setNonBlocking(m_socket);
     ::str2ba( remoteMAC, &m_remote_addr.l2_bdaddr );
     if (::connect(m_socket, reinterpret_cast<struct sockaddr *>(&m_remote_addr), sizeof(m_remote_addr)) < 0)
     {
+        close(m_socket);
         throw std::runtime_error("failed to open bluetooth server socket");
-    }            
+    }
+    setNonBlocking(m_socket);
+
+    // Prepare poll structure
+    struct pollfd pfd = { m_socket, POLLIN | POLLOUT, 0 };
+
+    // Wait for readiness, at most one sec
+    while(1)
+    {
+        if (poll(&pfd, 1, 1000) <= 0)
+        {
+            throw std::runtime_error("failed to poll bluetooth server socket");
+        }
+        else
+        {
+            if (pfd.revents & POLLOUT)
+            {
+                break;
+            }
+        }
+    }
 }
 
 ssize_t BTConnection::sendLocalRandom(void) noexcept
@@ -56,7 +95,7 @@ bool BTConnection::keyExchangeClient(void)
     ssize_t remoteRandom = receive(remoteKeyMsg);
 
     // key exchange message response from server did not arrive yet
-    if ((remoteRandom < 0) && ((errno == EAGAIN) || (errno == EWOULDBLOCK)))
+    if ((remoteRandom == 0U) && ((errno == EAGAIN) || (errno == EWOULDBLOCK)))
     {
         ret = false;
     }
@@ -82,13 +121,13 @@ bool BTConnection::keyExchangeServer(void)
     array<uint8_t, 33> remoteKeyMsg;
     ssize_t remoteRandom = receive(remoteKeyMsg);
 
-    if ((remoteRandom < 0) && ((errno == EAGAIN) || (errno == EWOULDBLOCK)))
+    if ((remoteRandom == 0U) && ((errno == EAGAIN) || (errno == EWOULDBLOCK)))
     {
         ret = false;
     }
     else
     {
-        if ((remoteRandom != 33) || (remoteKeyMsg[0] != 0))
+        if ((remoteRandom != 33U) || (remoteKeyMsg[0] != 0U))
         {
             throw runtime_error("Received incorrect random message from server");
         }
@@ -145,7 +184,7 @@ ssize_t BTConnection::receiveWithCounterAndMAC(uint8_t &msgType, std::span<uint8
     array<uint8_t, MAX_MSG_LEN> rxBuf;
     ssize_t rxMsgLen = receive(rxBuf);
 
-    if (rxMsgLen < 0)
+    if (rxMsgLen == 0)
     {
         if ((errno != EAGAIN) && (errno != EWOULDBLOCK))
         {
@@ -211,7 +250,10 @@ uint32_t BTConnection::deSerializeUint32(uint8_t const *pBuf) const
 void BTConnection::setNonBlocking(int socketHandle) const
 {
     int flags = fcntl(socketHandle, F_GETFL, 0); 
-    fcntl(socketHandle, F_SETFL, flags | O_NONBLOCK);
+    if (fcntl(socketHandle, F_SETFL, flags | O_NONBLOCK) < 0)
+    {
+        throw runtime_error ("Failed to configure socket as nonblocking");
+    }
 }
 
 BTConnection::~BTConnection(void)
@@ -219,4 +261,4 @@ BTConnection::~BTConnection(void)
     close(m_socket);
 }
 
-};
+}
