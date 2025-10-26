@@ -38,7 +38,7 @@ private:
 
     void serializeUint32(uint8_t *pBuf, uint32_t val) const;
     uint32_t deSerializeUint32(uint8_t const *pBuf) const;
-    void setNonBlocking(int socketHandle) const;
+    void setNonBlockingAndPoll(int socketHandle, bool isClient) const;
 
 
     CryptoWrapper m_cryptoWrapper;

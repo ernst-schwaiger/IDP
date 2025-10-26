@@ -21,26 +21,7 @@ BTConnection::BTConnection(BTListenSocket *pListenSocket) :
     {
         throw std::runtime_error("failed to open bluetooth client socket");
     }
-    setNonBlocking(m_socket);
-
-    // Prepare poll structure
-    struct pollfd pfd = { m_socket, POLLIN | POLLOUT, 0 };
-
-    // Wait for readiness, at most one sec
-    while(1)
-    {
-        if (poll(&pfd, 1, 1000) <= 0)
-        {
-            throw std::runtime_error("failed to poll bluetooth server socket");
-        }
-        else
-        {
-            if ((pfd.revents & POLLIN) && (pfd.revents & POLLOUT))
-            {
-                break;
-            }
-        }
-    }
+    setNonBlockingAndPoll(m_socket, false);
 }
 
 BTConnection::BTConnection(char const *remoteMAC) : 
@@ -54,26 +35,7 @@ BTConnection::BTConnection(char const *remoteMAC) :
         close(m_socket);
         throw std::runtime_error("failed to open bluetooth server socket");
     }
-    setNonBlocking(m_socket);
-
-    // Prepare poll structure
-    struct pollfd pfd = { m_socket, POLLIN | POLLOUT, 0 };
-
-    // Wait for readiness, at most one sec
-    while(1)
-    {
-        if (poll(&pfd, 1, 1000) <= 0)
-        {
-            throw std::runtime_error("failed to poll bluetooth server socket");
-        }
-        else
-        {
-            if (pfd.revents & POLLOUT)
-            {
-                break;
-            }
-        }
-    }
+    setNonBlockingAndPoll(m_socket, true);
 }
 
 ssize_t BTConnection::sendLocalRandom(void) noexcept
@@ -247,13 +209,34 @@ uint32_t BTConnection::deSerializeUint32(uint8_t const *pBuf) const
     return (pBuf[0] << 24) | (pBuf[1] << 16) | (pBuf[2] << 8) | pBuf[3];
 }
 
-void BTConnection::setNonBlocking(int socketHandle) const
+void BTConnection::setNonBlockingAndPoll(int socketHandle, bool isClient) const
 {
     int flags = fcntl(socketHandle, F_GETFL, 0); 
     if (fcntl(socketHandle, F_SETFL, flags | O_NONBLOCK) < 0)
     {
         throw runtime_error ("Failed to configure socket as nonblocking");
     }
+
+    // We poll for readiness events fpr receiving and sending
+    struct pollfd pfd = { m_socket, POLLIN | POLLOUT, 0 };
+
+    while(1)
+    {
+        // Wait for readiness events, at most one sec
+        if (poll(&pfd, 1, 1'000U) <= 0)
+        {
+            throw std::runtime_error("failed to poll bluetooth server socket");
+        }
+        else
+        {
+            // Clients only poll for tx readiness as they send the "Random Request" message
+            // Servers wait for rx and tx readiness as well as they receive the "Random Request" message
+            if ((pfd.revents & POLLOUT) && (isClient || (pfd.revents & POLLIN)))
+            {
+                break;
+            }
+        }
+    }    
 }
 
 BTConnection::~BTConnection(void)
