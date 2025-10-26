@@ -1,4 +1,5 @@
 #include "BTConnection.h"
+#include "BTRuntimeError.h"
 
 #include <stdexcept>
 #include <span>
@@ -19,7 +20,7 @@ BTConnection::BTConnection(BTListenSocket *pListenSocket) :
     m_socket = ::accept(pListenSocket->getListenSocket(), reinterpret_cast<struct sockaddr *>(&m_remote_addr), &socklen);
     if (m_socket < 0)
     {
-        throw std::runtime_error("failed to open bluetooth client socket");
+        throw BTRuntimeError("failed to open bluetooth client socket");
     }
     setNonBlockingAndPoll(m_socket, false);
 }
@@ -33,7 +34,7 @@ BTConnection::BTConnection(char const *remoteMAC) :
     if (::connect(m_socket, reinterpret_cast<struct sockaddr *>(&m_remote_addr), sizeof(m_remote_addr)) < 0)
     {
         close(m_socket);
-        throw std::runtime_error("failed to open bluetooth server socket");
+        throw BTRuntimeError("failed to open bluetooth server socket");
     }
     setNonBlockingAndPoll(m_socket, true);
 }
@@ -66,7 +67,7 @@ bool BTConnection::keyExchangeClient(void)
         // incorrect payload received, reset, restart connection
         if ((remoteRandom != 33U) || (remoteKeyMsg[0] != 0U))
         {
-            throw runtime_error("Received incorrect random message from server");
+            throw BTRuntimeError("Received incorrect random message from server");
         }
         // Successful reception
         m_cryptoWrapper.generateSessionKey({ &remoteKeyMsg[1], remoteKeyMsg.size() - 1});
@@ -91,7 +92,7 @@ bool BTConnection::keyExchangeServer(void)
     {
         if ((remoteRandom != 33U) || (remoteKeyMsg[0] != 0U))
         {
-            throw runtime_error("Received incorrect random message from server");
+            throw BTRuntimeError("Received incorrect random message from server");
         }
         sendLocalRandom();
         m_cryptoWrapper.generateSessionKey({ &remoteKeyMsg[1], remoteKeyMsg.size() - 1});
@@ -134,7 +135,7 @@ ssize_t BTConnection::sendWithCounterAndMAC(uint8_t msgType, std::span<const uin
     if (sentBytes < 0)
     {
         // Throwing leaves the comm loop and will set up a new connection
-        throw runtime_error ("Failed to send data");
+        throw BTRuntimeError("Failed to send data");
     }
 
     return sentBytes;
@@ -150,7 +151,7 @@ ssize_t BTConnection::receiveWithCounterAndMAC(uint8_t &msgType, std::span<uint8
     {
         if ((errno != EAGAIN) && (errno != EWOULDBLOCK))
         {
-            throw runtime_error ("Failed to receive data");
+            throw BTRuntimeError("Failed to receive data");
         }
     }
 
@@ -214,7 +215,7 @@ void BTConnection::setNonBlockingAndPoll(int socketHandle, bool isClient) const
     int flags = fcntl(socketHandle, F_GETFL, 0); 
     if (fcntl(socketHandle, F_SETFL, flags | O_NONBLOCK) < 0)
     {
-        throw runtime_error ("Failed to configure socket as nonblocking");
+        throw BTRuntimeError("Failed to configure socket as nonblocking");
     }
 
     // We poll for readiness events fpr receiving and sending
@@ -225,7 +226,7 @@ void BTConnection::setNonBlockingAndPoll(int socketHandle, bool isClient) const
         // Wait for readiness events, at most one sec
         if (poll(&pfd, 1, 1'000U) <= 0)
         {
-            throw std::runtime_error("failed to poll bluetooth server socket");
+            throw BTRuntimeError("failed to poll bluetooth server socket");
         }
         else
         {

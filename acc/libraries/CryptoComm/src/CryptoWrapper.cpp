@@ -86,35 +86,29 @@ uint8_t CryptoWrapper::generateHMAC(std::span<uint8_t const> data, std::span<uin
 {
     if (!m_optSessionKey.has_value())
     {
-        //throw runtime_error("No session key for calculating hmac is available.");
         return 1;
     }
 
     hmac_state hs;
 
-
     if (hmac_init(&hs, find_hash("sha256"), begin(*m_optSessionKey), m_optSessionKey->size()) != CRYPT_OK)
     {
-        //throw runtime_error("Failed to initialize hmac.");
         return 2;
     }
 
     if (hmac_process(&hs, &data[0], data.size()) != CRYPT_OK)
     {
-        //throw runtime_error("Failed to calculate hmac.");
         return 3;
     }
 
     unsigned long hmac_size = hmac.size();
     if (hmac_done(&hs, &hmac[0], &hmac_size) != CRYPT_OK)
     {
-        //throw runtime_error("Failed to calculate hmac.");
         return 4;
     }
 
     if (hmac_size != 256 / 8)
     {
-        //throw runtime_error("Failed to calculate hmac.");
         return 5;
     }
 
@@ -123,12 +117,11 @@ uint8_t CryptoWrapper::generateHMAC(std::span<uint8_t const> data, std::span<uin
 
 uint8_t CryptoWrapper::verifyHMAC(std::span<uint8_t const> data, std::span<uint8_t const> hmac) const
 {
-    array<uint8_t, 32> genHMAC;
+    array<uint8_t, 256 / 8> genHMAC;
     generateHMAC(data, genHMAC);
 
-    if ((genHMAC.size() != 256 / 8) || (hmac.size() != 256 / 8))
+    if (hmac.size() != 256 / 8)
     {
-        //throw runtime_error("Failed to calculate hmac.");
         return 5;
     }
 
@@ -137,6 +130,6 @@ uint8_t CryptoWrapper::verifyHMAC(std::span<uint8_t const> data, std::span<uint8
         return 6;
     }
 
-    return 0; // FIXME: Implement
+    return 0;
 }
 }

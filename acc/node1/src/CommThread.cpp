@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include <BTConnection.h>
+#include <BTRuntimeError.h>
 #include <Helper.h>
 #include "CommThread.h"
 
@@ -17,10 +18,17 @@ void acc::CommThread::run(void)
         {
             commLoop(m_listenSocket);
         }
-        catch(runtime_error const &e)
+        catch(BTRuntimeError const &e)
         {
-            cerr << "Runtime Exception: " << e.what() << '\n';
-            perror("Error message: ");
+            // Connection reset is handled gracefully
+            if (ECONNRESET == e.errNumber())
+            {
+                cout << "Connection to client lost. Setting up new connection.\n";
+            }
+            else
+            {
+                cerr << "BTRuntimeError (" << e.errNumber() << ") " << e.what() << ": " << strerror(e.errNumber()) << "\n";
+            }
         }
     }
 }

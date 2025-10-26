@@ -1,4 +1,5 @@
 #include "BTListenSocket.h"
+#include "BTRuntimeError.h"
 
 #include <stdexcept>
 #include <gio/gio.h>
@@ -17,12 +18,12 @@ BTListenSocket::BTListenSocket(void) :
 
     if (m_listenSocket < 0)
     {
-        throw std::runtime_error("failed to create listen socket");
+        throw BTRuntimeError("failed to create listen socket");
     }
 
     if (::bind(m_listenSocket, reinterpret_cast<struct sockaddr *>(&m_local_addr), sizeof(m_local_addr)) < 0)
     {
-        throw std::runtime_error("failed to bind to listen socket");
+        throw BTRuntimeError("failed to bind to listen socket");
     }
 
     // put socket into listening mode
@@ -42,7 +43,7 @@ void BTListenSocket::makeBTDeviceVisible(void)
 
     if (error != nullptr)
     {
-        throw std::runtime_error(error->message);
+        throw BTRuntimeError(error->message);
     }
 
     GDBusProxy *adapter_proxy = g_dbus_proxy_new_sync(
@@ -57,7 +58,7 @@ void BTListenSocket::makeBTDeviceVisible(void)
 
     if (error != nullptr)
     {
-        throw std::runtime_error(error->message);
+        throw BTRuntimeError(error->message);
     }
 
     GVariant *value = g_variant_new_boolean(TRUE);
@@ -82,7 +83,7 @@ void BTListenSocket::makeBTDeviceVisible(void)
 
     if (error != nullptr)
     {
-        throw std::runtime_error(error->message);
+        throw BTRuntimeError(error->message);
     }
 }
 
