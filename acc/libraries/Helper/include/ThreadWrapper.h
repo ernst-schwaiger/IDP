@@ -12,7 +12,7 @@ public:
     virtual void run(void) = 0;
 
 protected:
-    bool terminateApp()
+    [[ nodiscard ]] bool terminateApp() const
     {
         return m_bterminateApp;
     }

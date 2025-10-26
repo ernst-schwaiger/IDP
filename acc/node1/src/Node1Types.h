@@ -3,8 +3,13 @@
 #include <cstdint>
 #include <unistd.h>
 
+namespace acc
+{
+
 // API used by Comm Thread
-uint16_t getCurrentDistanceReading();
+[[ nodiscard ]] uint16_t getCurrentDistanceReading();
 
 // API used by Sensor Thread
 void setCurrentDistanceReading(uint16_t value);
+
+} // namespace acc

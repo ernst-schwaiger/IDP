@@ -13,7 +13,7 @@ using namespace acc;
 
 void acc::CommThread::run(void)
 {
-    uint32_t connectErrorCounter = 0;
+    uint32_t connectErrorCounter = 0U;
     while (!terminateApp())
     {
         try
@@ -26,7 +26,7 @@ void acc::CommThread::run(void)
             // We try to connect from start in that case
             if ((ECONNREFUSED == e.errNumber()) || (ECONNRESET == e.errNumber()) || (EAGAIN == e.errNumber()))
             {
-                if ((++connectErrorCounter % 500U) == 0) // do not clutter stdout
+                if ((++connectErrorCounter % 500U) == 0U) // do not clutter stdout
                 {
                     cout << "Failed to connect to server. Try to reconnect...\n";
                 }
@@ -56,14 +56,14 @@ void acc::CommThread::commLoop(char const *remoteMAC)
 
     // counter;  a timestamp indicating the ms since the Bluetooth connection
     // was established between Node 1, Node 2
-    uint32_t counter = 0;
-    uint32_t noValidMsgRxCounter = 0;
+    uint32_t counter = 0U;
+    uint32_t noValidMsgRxCounter = 0U;
 
     while (!terminateApp())
     {
         uint8_t msgType;
         // buffer for sending and receiving messages
-        array<uint8_t, MAX_MSG_LEN> msgBuf = { 0 };
+        array<uint8_t, MAX_MSG_LEN> msgBuf = { 0U };
         // message reception (blocking)
         if (conn.receiveWithCounterAndMAC(msgType, {&msgBuf[0], msgBuf.size()}, counter, true) >= 0)
         {
@@ -72,7 +72,7 @@ void acc::CommThread::commLoop(char const *remoteMAC)
                 DistanceReadingInfoType reading = { getTimestampMs(), static_cast<uint16_t>((msgBuf[0] << 8) + msgBuf[1]) };
                 setCurrentDistanceReading(&reading);     
             }
-            noValidMsgRxCounter = 0;
+            noValidMsgRxCounter = 0U;
         }
         else
         {
@@ -85,6 +85,6 @@ void acc::CommThread::commLoop(char const *remoteMAC)
         }
 
         // Sleep 1ms, minimize latency of receiving reading message
-        usleep(1'000);        
+        usleep(1'000U);        
     }
 }

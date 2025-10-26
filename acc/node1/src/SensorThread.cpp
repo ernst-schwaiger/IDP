@@ -25,6 +25,6 @@ void acc::SensorThread::run(void)
         setCurrentDistanceReading(nextReadingVal);
         
         // Sleep 50ms
-        usleep(50'000);
+        usleep(50'000U);
     }
 }

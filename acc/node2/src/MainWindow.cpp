@@ -12,6 +12,7 @@ inline int clamp(int v, int lo, int hi) { return std::min(hi, std::max(lo, v)); 
 }
 
 using namespace std;
+using namespace acc;
 
 MainWindow::MainWindow(bool &bTerminateApp, QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow), bTerminateApp_(bTerminateApp)

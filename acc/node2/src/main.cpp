@@ -21,14 +21,16 @@ static constexpr uint16_t DISTANCE_READING_ERROR_1 = 65534U;
 static constexpr uint16_t DISTANCE_READING_ERROR_2 = 65535U;
 
 // global var, written by the sensor thread, read by the acc thread, shall only be accessed via get/set functions
-DistanceReadingType gCurrentDistanceReading = { { 0UL, 0xffff}, PTHREAD_MUTEX_INITIALIZER };
+static DistanceReadingType gCurrentDistanceReading = { { 0UL, 0xffff}, PTHREAD_MUTEX_INITIALIZER };
 
 // global vehicle state, read and written by acc thread and GUI/main thread, shall only be accessed via get/set functions
-VehicleStateType gVehicleState = { {AccState::Off, 0, 0 }, PTHREAD_MUTEX_INITIALIZER};
+static VehicleStateType gVehicleState = { {AccState::Off, 0U, 0U }, PTHREAD_MUTEX_INITIALIZER};
 
 // global app termination flag; no critical sections required
-bool gTerminateApplication = false;
+static bool gTerminateApplication = false;
 
+namespace acc
+{
 void getCurrentDistanceReading(DistanceReadingInfoType *pReading)
 {
     pthread_mutex_lock(&gCurrentDistanceReading.lock);
@@ -131,6 +133,8 @@ static void *commThreadFunc(void *arg)
     return nullptr;
 }
 
+} // namespace acc
+
 int main(int argc, char *argv[])
 {
     int ret = 0;
@@ -201,13 +205,13 @@ int main(int argc, char *argv[])
     if (optAccThreadHandle.has_value())
     {
         cout << "Joining acc thread...\n";
-        pthread_join(*optAccThreadHandle, NULL);
+        pthread_join(*optAccThreadHandle, nullptr);
     }
 
     if (optCommThreadHandle.has_value())
     {
         cout << "Joining comm thread...\n";
-        pthread_join(*optCommThreadHandle, NULL);
+        pthread_join(*optCommThreadHandle, nullptr);
     }
 
     return ret;

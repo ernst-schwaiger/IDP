@@ -8,13 +8,13 @@ namespace acc
 class ACCThread : public ThreadWrapper<void>
 {
 public:
-    ACCThread(bool &terminateApp) : ThreadWrapper(terminateApp, nullptr), latestValidDistanceReading{ 0, 0xffff } {}
-    virtual ~ACCThread(void) {}
-    virtual void run(void);
+    explicit ACCThread(bool &terminateApp) : ThreadWrapper(terminateApp, nullptr), latestValidDistanceReading{ 0, 0xffff } {}
+    virtual ~ACCThread(void) override {}
+    virtual void run(void) override;
 
 private:
 
-    uint32_t accFunc(uint16_t currentDistance, uint32_t currentSpeedMetersPerHour);
+    [[nodiscard]] uint32_t accFunc(uint16_t currentDistance, uint32_t currentSpeedMetersPerHour);
     DistanceReadingInfoType latestValidDistanceReading;
 };    
 }

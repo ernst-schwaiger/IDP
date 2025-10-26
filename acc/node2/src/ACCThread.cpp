@@ -29,7 +29,7 @@ void acc::ACCThread::run(void)
         }
 
         // Is our latest reading too old (older than 500ms)?
-        if ((acc::getTimestampMs() - reading.timestamp) > 500)
+        if ((acc::getTimestampMs() - reading.timestamp) > 500U)
         {
             currentVehicleState.accState = AccState::Fault;
             updateAccState = true;
@@ -48,14 +48,14 @@ void acc::ACCThread::run(void)
         }
 
         // Calculate new Global Vehicle State
-        uint16_t *pDistanceMeters = &reading.distance;
-        AccState *pAccState = nullptr;
+        uint16_t const *pDistanceMeters = &reading.distance;
+        AccState const *pAccState = nullptr;
         if (updateAccState)
         {
             pAccState = &currentVehicleState.accState;
         }
 
-        uint32_t *pSpeedMetersPerHour = nullptr;
+        uint32_t const *pSpeedMetersPerHour = nullptr;
         if (currentVehicleState.accState == AccState::On)
         {
             pSpeedMetersPerHour = &currentVehicleState.speedMetersPerHour;
@@ -65,7 +65,7 @@ void acc::ACCThread::run(void)
         setCurrentVehicleState(pAccState, pSpeedMetersPerHour, pDistanceMeters);
 
         // Sleep 50ms
-        usleep(50'000);
+        usleep(50'000U);
     }
 }
 
@@ -73,7 +73,7 @@ uint32_t acc::ACCThread::accFunc(uint16_t currentDistance, uint32_t currentSpeed
 {
     // FIXME: Also take the set speed of the ACC into account here!
     // "Halber Tacho"
-    uint32_t targetSpeedMetersPerHour = std::min<uint32_t>(currentDistance / 2, VEHICLE_SPEED_MAX) * 1000;
+    uint32_t targetSpeedMetersPerHour = std::min<uint32_t>(currentDistance / 2U, VEHICLE_SPEED_MAX) * 1000U;
     int64_t speedDifference = static_cast<int64_t>(targetSpeedMetersPerHour) - static_cast<int64_t>(currentSpeedMetersPerHour);
     // We assume that in each iteration, we cover 10% of the difference current speed / target speed.
     double appliedSpeedDelta = (speedDifference / 10.0);

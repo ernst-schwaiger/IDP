@@ -9,8 +9,8 @@ class CommThread : public ThreadWrapper<char>
 {
 public:
     CommThread(bool &terminateApp, char *pRemoteMAC) : ThreadWrapper(terminateApp, pRemoteMAC) {}
-    virtual ~CommThread(void) {}
-    virtual void run(void);
+    virtual ~CommThread(void) override {}
+    virtual void run(void) override;
 
 private:
     void commLoop(char const *remoteMAC);

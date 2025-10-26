@@ -11,7 +11,7 @@ namespace acc
 {
 // FIXME: Cleanup, provide a real random bytestream here
 
-const array<uint8_t, 32> CryptoWrapper::PRE_SHARED_KEY = 
+const array<uint8_t, KEY_LEN_BYTES> CryptoWrapper::PRE_SHARED_KEY = 
 {
     0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
     0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
@@ -60,19 +60,19 @@ CryptoWrapper::CryptoWrapper(void)
 void CryptoWrapper::generateSessionKey(std::span<uint8_t const> remoteRandomNumber)
 {
     // create the common salt: append the larger random number to the smaller one
-    std::array<uint8_t, 64> salt;
+    std::array<uint8_t, RND_LEN_BYTES * 2U> salt;
     if (std::memcmp(begin(m_localRandomNumber), &remoteRandomNumber[0], m_localRandomNumber.size()) < 0)
     {
         std::copy(begin(m_localRandomNumber), end(m_localRandomNumber), begin(salt));
-        std::copy(begin(remoteRandomNumber), end(remoteRandomNumber), begin(salt) + 32);
+        std::copy(begin(remoteRandomNumber), end(remoteRandomNumber), begin(salt) + RND_LEN_BYTES);
     }
     else
     {
         std::copy(begin(remoteRandomNumber), end(remoteRandomNumber), begin(salt));
-        std::copy(begin(m_localRandomNumber), end(m_localRandomNumber), begin(salt)+ 32);
+        std::copy(begin(m_localRandomNumber), end(m_localRandomNumber), begin(salt) + RND_LEN_BYTES);
     }
 
-    array<uint8_t, 32> sessionKey;
+    array<uint8_t, KEY_LEN_BYTES> sessionKey;
 
     if (hkdf(find_hash("sha256"), begin(salt), salt.size(), nullptr, 0, begin(PRE_SHARED_KEY), PRE_SHARED_KEY.size(), begin(sessionKey), sessionKey.size()) != CRYPT_OK)
     {
@@ -86,30 +86,30 @@ uint8_t CryptoWrapper::generateHMAC(std::span<uint8_t const> data, std::span<uin
 {
     if (!m_optSessionKey.has_value())
     {
-        return 1;
+        return 1U;
     }
 
     hmac_state hs;
 
     if (hmac_init(&hs, find_hash("sha256"), begin(*m_optSessionKey), m_optSessionKey->size()) != CRYPT_OK)
     {
-        return 2;
+        return 2U;
     }
 
     if (hmac_process(&hs, &data[0], data.size()) != CRYPT_OK)
     {
-        return 3;
+        return 3U;
     }
 
     unsigned long hmac_size = hmac.size();
     if (hmac_done(&hs, &hmac[0], &hmac_size) != CRYPT_OK)
     {
-        return 4;
+        return 4U;
     }
 
-    if (hmac_size != 256 / 8)
+    if (hmac_size != HMAC_LEN_BYTES)
     {
-        return 5;
+        return 5U;
     }
 
     return 0;
@@ -117,19 +117,22 @@ uint8_t CryptoWrapper::generateHMAC(std::span<uint8_t const> data, std::span<uin
 
 uint8_t CryptoWrapper::verifyHMAC(std::span<uint8_t const> data, std::span<uint8_t const> hmac) const
 {
-    array<uint8_t, 256 / 8> genHMAC;
-    generateHMAC(data, genHMAC);
-
-    if (hmac.size() != 256 / 8)
+    array<uint8_t, HMAC_LEN_BYTES> genHMAC;
+    if (generateHMAC(data, genHMAC) != 0)
     {
-        return 5;
+        return 7;
+    }
+
+    if (hmac.size() != HMAC_LEN_BYTES)
+    {
+        return 5U;
     }
 
     if (memcmp(&genHMAC[0], &hmac[0], genHMAC.size()) != 0)
     {
-        return 6;
+        return 6U;
     }
 
-    return 0;
+    return 0U;
 }
 }

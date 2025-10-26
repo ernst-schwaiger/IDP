@@ -19,11 +19,13 @@ typedef struct
 static constexpr uint16_t DISTANCE_READING_ERROR_2 = 65535U;
 
 // global var, written by the sensor thread, read by the communication thread
-DistanceReadingType gCurrentDistanceReading = { DISTANCE_READING_ERROR_2, PTHREAD_MUTEX_INITIALIZER };
+static DistanceReadingType gCurrentDistanceReading = { DISTANCE_READING_ERROR_2, PTHREAD_MUTEX_INITIALIZER };
 
 // global app termination flag; no critical sections required
-bool gTerminateApplication = false;
+static bool gTerminateApplication = false;
 
+namespace acc
+{
 
 uint16_t getCurrentDistanceReading()
 {
@@ -63,6 +65,8 @@ static void *sensorThreadFunc(void *)
 
     return nullptr;
 }
+
+} // namespace acc
 
 int main()
 {
@@ -108,7 +112,7 @@ int main()
     if (optSensorThreadHandle.has_value())
     {
         cout << "Joining sensor thread...\n";
-        pthread_join(*optSensorThreadHandle, NULL);
+        pthread_join(*optSensorThreadHandle, nullptr);
     }
 
     return ret;

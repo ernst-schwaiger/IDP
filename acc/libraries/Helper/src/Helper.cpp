@@ -11,7 +11,7 @@ uint64_t getTimestampMs(void)
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
 
-    uint64_t ms = ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+    uint64_t ms = ts.tv_sec * 1'000U + ts.tv_nsec / 1'000'000U;
     return ms;
 }
 

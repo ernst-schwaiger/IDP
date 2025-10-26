@@ -32,8 +32,8 @@ Sensor::Sensor(uint8_t trigPin, uint8_t echoPin) : trigPin(trigPin), echoPin(ech
 
     gpioSetMode(trigPin, PI_OUTPUT);
     gpioSetMode(echoPin, PI_INPUT);
-    gpioWrite(trigPin, 0);
-    usleep(200000);
+    gpioWrite(trigPin, 0U);
+    usleep(200'000U);
 #endif
 }
 
@@ -47,9 +47,9 @@ Sensor::~Sensor(void)
 double Sensor::getDistanceCm(void) 
 {
 #ifdef PROXIMITY_SENSORS_MOUNTED
-    gpioWrite(trigPin, 1);
-    gpioDelay(10);
-    gpioWrite(trigPin, 0);
+    gpioWrite(trigPin, 1U);
+    gpioDelay(10U);
+    gpioWrite(trigPin, 0U);
 
     while (gpioRead(echoPin) == 0) {}
     uint32_t start = gpioTick();

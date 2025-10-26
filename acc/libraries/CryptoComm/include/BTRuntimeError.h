@@ -13,17 +13,17 @@ namespace acc
 class BTRuntimeError : public std::exception
 {
 public:
-    BTRuntimeError(std::string const &errorMessage) : 
+    explicit BTRuntimeError(std::string const &errorMessage) : 
         m_errorNumber(errno),
         m_errorMessage(errorMessage)
     {}
 
-    const char* what() const noexcept override 
+    [[ nodiscard ]] const char* what() const noexcept override 
     {
         return m_errorMessage.c_str();
     }
 
-    int errNumber() const noexcept { return m_errorNumber; }
+    [[ nodiscard ]] int errNumber() const noexcept { return m_errorNumber; }
 
 private:
     int m_errorNumber;

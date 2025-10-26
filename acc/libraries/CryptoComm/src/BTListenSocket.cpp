@@ -39,7 +39,7 @@ BTListenSocket::~BTListenSocket(void)
 void BTListenSocket::makeBTDeviceVisible(void)
 {
     GError *error = nullptr;
-    GDBusConnection *connection = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, &error);
+    GDBusConnection *connection = g_bus_get_sync(G_BUS_TYPE_SYSTEM, nullptr, &error);
 
     if (error != nullptr)
     {
@@ -49,11 +49,11 @@ void BTListenSocket::makeBTDeviceVisible(void)
     GDBusProxy *adapter_proxy = g_dbus_proxy_new_sync(
         connection,
         G_DBUS_PROXY_FLAGS_NONE,
-        NULL,
+        nullptr,
         "org.bluez",
         "/org/bluez/hci0",
         "org.bluez.Adapter1",
-        NULL,
+        nullptr,
     &error);
 
     if (error != nullptr)
@@ -75,10 +75,10 @@ void BTListenSocket::makeBTDeviceVisible(void)
             "org.bluez.Adapter1",           // Interface name
             "Discoverable",                 // Property name
             g_variant_new_boolean(TRUE)),   // Value
-        NULL,
+        nullptr,
         G_DBUS_CALL_FLAGS_NONE,
         -1,
-        NULL,
+        nullptr,
         &error);    
 
     if (error != nullptr)

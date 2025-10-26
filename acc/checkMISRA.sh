@@ -15,6 +15,15 @@ for include_path in ${INCLUDE_PATHS}; do
     INC_PATH_ARGS="${INC_PATH_ARGS} -I${include_path}"
 done
 
+# gcc library paths
+INC_PATHS_GCC=$(gcc --print-search-dirs | grep "libraries" | sed -E "s|[^=]+=(.*)|\1|")
+INC_PATHS_GCC_SPLIT=$(echo $INC_PATHS_GCC | tr ":" "\n")
+for include_path in ${INC_PATHS_GCC_SPLIT}; do
+    INC_PATH_ARGS="${INC_PATH_ARGS} -I${include_path}"
+done
+
+INC_PATH_ARGS="${INC_PATH_ARGS} -I/usr/include/c++/14/algorithm -I/usr/include/c++/14/ext/algorithm -I/usr/include"
+
 #
 # Runs cppcheck including MISRA rules on the acc source code
 #

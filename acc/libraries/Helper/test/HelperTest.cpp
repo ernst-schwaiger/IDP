@@ -6,5 +6,5 @@ using namespace std;
 
 TEST_CASE( "generation of session key works", "crypto" )
 {
-    REQUIRE( 42 == 42U );
+    REQUIRE( 42U == 42U );
 }

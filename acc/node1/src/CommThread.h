@@ -12,9 +12,9 @@ namespace acc
 class CommThread : public ThreadWrapper<void>
 {
 public:
-    CommThread(bool &terminateApp) : ThreadWrapper(terminateApp, nullptr), m_listenSocket() {}
-    virtual ~CommThread(void) {}
-    virtual void run(void);
+    explicit CommThread(bool &terminateApp) : ThreadWrapper(terminateApp, nullptr), m_listenSocket() {}
+    virtual ~CommThread(void) override {}
+    virtual void run(void) override;
 
 private:
     void commLoop(acc::BTListenSocket &listenSocket);

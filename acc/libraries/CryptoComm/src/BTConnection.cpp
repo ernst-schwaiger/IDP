@@ -12,7 +12,7 @@ using namespace std;
 
 namespace acc
 {
-BTConnection::BTConnection(BTListenSocket *pListenSocket) : 
+BTConnection::BTConnection(BTListenSocket const *pListenSocket) : 
     m_cryptoWrapper{},
     m_remote_addr{ AF_BLUETOOTH, htobs(0x1001), { 0 }, 0, 0 }
 {
@@ -41,8 +41,8 @@ BTConnection::BTConnection(char const *remoteMAC) :
 
 ssize_t BTConnection::sendLocalRandom(void) noexcept
 {
-    array<uint8_t, 33> msgPayload;
-    array<uint8_t, 32> const &localRandom = m_cryptoWrapper.getLocalRandomNumber();
+    array<uint8_t, MAX_RND_MSG_LEN> msgPayload;
+    array<uint8_t, RND_LEN> const &localRandom = m_cryptoWrapper.getLocalRandomNumber();
     msgPayload[0] = 0;
     copy(begin(localRandom), end(localRandom), &msgPayload[1]);
     return send(msgPayload);
@@ -52,8 +52,11 @@ bool BTConnection::keyExchangeClient(void)
 {
     bool ret = true;
     // Determine session key
-    array<uint8_t, 33> remoteKeyMsg;
-    sendLocalRandom();
+    array<uint8_t, MAX_RND_MSG_LEN> remoteKeyMsg;
+    if (sendLocalRandom() <= 0)
+    {
+        throw BTRuntimeError("Failed to send random message.");
+    }
     usleep(1'000'000U);
     ssize_t remoteRandom = receive(remoteKeyMsg);
 
@@ -65,7 +68,7 @@ bool BTConnection::keyExchangeClient(void)
     else
     {
         // incorrect payload received, reset, restart connection
-        if ((remoteRandom != 33U) || (remoteKeyMsg[0] != 0U))
+        if ((remoteRandom != MAX_RND_MSG_LEN) || (remoteKeyMsg[0] != 0U))
         {
             throw BTRuntimeError("Received incorrect random message from server");
         }
@@ -81,7 +84,7 @@ bool BTConnection::keyExchangeServer(void)
     bool ret = true;
 
     // Determine session key
-    array<uint8_t, 33> remoteKeyMsg;
+    array<uint8_t, MAX_RND_MSG_LEN> remoteKeyMsg;
     ssize_t remoteRandom = receive(remoteKeyMsg);
 
     if ((remoteRandom == 0U) && ((errno == EAGAIN) || (errno == EWOULDBLOCK)))
@@ -90,11 +93,15 @@ bool BTConnection::keyExchangeServer(void)
     }
     else
     {
-        if ((remoteRandom != 33U) || (remoteKeyMsg[0] != 0U))
+        if ((remoteRandom != MAX_RND_MSG_LEN) || (remoteKeyMsg[0] != 0U))
         {
             throw BTRuntimeError("Received incorrect random message from server");
         }
-        sendLocalRandom();
+        if (sendLocalRandom() <= 0)
+        {
+            throw BTRuntimeError("Failed to send random message.");
+        }
+
         m_cryptoWrapper.generateSessionKey({ &remoteKeyMsg[1], remoteKeyMsg.size() - 1});
     }
 
@@ -185,7 +192,7 @@ ssize_t BTConnection::receiveWithCounterAndMAC(uint8_t &msgType, std::span<uint8
     }
 
     if (m_cryptoWrapper.verifyHMAC({&rxBuf[0], static_cast<uint32_t>(rxMsgLen) - MAC_LEN}, 
-        {&rxBuf[rxMsgLen - MAC_LEN], MAC_LEN}) != 0)
+        {&rxBuf[rxMsgLen - MAC_LEN], MAC_LEN}) != 0U)
     {
         return -1;
     }
@@ -197,17 +204,17 @@ ssize_t BTConnection::receiveWithCounterAndMAC(uint8_t &msgType, std::span<uint8
     return payloadLength;
 }
 
-void BTConnection::serializeUint32(uint8_t *pBuf, uint32_t val) const
+void BTConnection::serializeUint32(uint8_t *pBuf, uint32_t val)
 {
-    pBuf[0] = static_cast<uint8_t>((val >> 24) & 0xff);
-    pBuf[1] = static_cast<uint8_t>((val >> 16) & 0xff);
-    pBuf[2] = static_cast<uint8_t>((val >> 8) & 0xff);
+    pBuf[0] = static_cast<uint8_t>((val >> 24U) & 0xff);
+    pBuf[1] = static_cast<uint8_t>((val >> 16U) & 0xff);
+    pBuf[2] = static_cast<uint8_t>((val >> 8U) & 0xff);
     pBuf[3] = static_cast<uint8_t>(val & 0xff);
 }
 
-uint32_t BTConnection::deSerializeUint32(uint8_t const *pBuf) const
+uint32_t BTConnection::deSerializeUint32(uint8_t const *pBuf)
 {
-    return (pBuf[0] << 24) | (pBuf[1] << 16) | (pBuf[2] << 8) | pBuf[3];
+    return (pBuf[0] << 24U) | (pBuf[1] << 16U) | (pBuf[2] << 8U) | pBuf[3];
 }
 
 void BTConnection::setNonBlockingAndPoll(int socketHandle, bool isClient) const
@@ -224,7 +231,7 @@ void BTConnection::setNonBlockingAndPoll(int socketHandle, bool isClient) const
     while(1)
     {
         // Wait for readiness events, at most one sec
-        if (poll(&pfd, 1, 1'000U) <= 0)
+        if (poll(&pfd, 1U, 1'000U) <= 0)
         {
             throw BTRuntimeError("failed to poll bluetooth server socket");
         }

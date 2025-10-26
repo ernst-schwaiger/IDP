@@ -30,7 +30,7 @@ private slots:
 private:
 
     void setupRightGridLayout();     // Zeilen/Spalten für gridLayout_rechts setzen
-    void updateAccState(AccState s); // Button-Text/Farbe/Enable
+    void updateAccState(acc::AccState s); // Button-Text/Farbe/Enable
     void updateHealthLed();          // LED rot/grün je nach fault_
     void updateSpeedStyle(int kmh);  // Farbe der LCD-Anzeige
     void showAlarm(bool on);         // ggf. später für Alarm-Frame

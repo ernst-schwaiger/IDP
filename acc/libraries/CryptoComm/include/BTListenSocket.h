@@ -12,14 +12,14 @@ public:
     BTListenSocket(void);
     ~BTListenSocket(void);
 
-    int getListenSocket(void) const
+    [[ nodiscard ]] int getListenSocket(void) const
     {
         return m_listenSocket;
     }
 
 private:
 
-    void makeBTDeviceVisible(void);
+    static void makeBTDeviceVisible(void);
     
     int m_listenSocket;
     struct sockaddr_l2 m_local_addr;

@@ -35,8 +35,8 @@ void acc::CommThread::run(void)
 
 void acc::CommThread::commLoop(acc::BTListenSocket &listenSocket)
 {
-    uint32_t numTxFails = 0;
-    uint32_t numTxSuccess = 0;
+    uint32_t numTxFails = 0U;
+    uint32_t numTxSuccess = 0U;
     acc::BTConnection conn(&listenSocket);
     
     // Set up session key
@@ -70,7 +70,7 @@ void acc::CommThread::commLoop(acc::BTListenSocket &listenSocket)
         }        
 
         // Sleep 25ms, oversampling sensor readings by a factor of two
-        usleep(25'000);
+        usleep(25'000U);
     }
 
     cout << "Tx Fails: " << numTxFails << ", Tx Success: " << numTxSuccess << "\n";    
