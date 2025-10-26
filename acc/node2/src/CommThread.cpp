@@ -3,6 +3,7 @@
 #include <unistd.h>
 
 #include <BTConnection.h>
+#include <BTRuntimeError.h>
 #include <Helper.h>
 
 #include "CommThread.h"
@@ -12,20 +13,28 @@ using namespace acc;
 
 void acc::CommThread::run(void)
 {
+    uint32_t connectErrorCounter = 0;
     while (!terminateApp())
     {
         try
         {
             commLoop(m_pthreadArg);
         }
-        catch(const runtime_error &e)
+        catch(BTRuntimeError const &e)
         {
-            cerr << "Runtime Exception: " << e.what() << '\n';
-            perror("Error message: ");
-        }
-        catch(...)
-        {
-            cerr << "Unknown exception occurred.\n";
+            // Handle connection refused, reset, unavailable gracefully.
+            // We try to connect from start in that case
+            if ((ECONNREFUSED == e.errNumber()) || (ECONNRESET == e.errNumber()) || (EAGAIN == e.errNumber()))
+            {
+                if ((++connectErrorCounter % 500U) == 0) // do not clutter stdout
+                {
+                    cout << "Failed to connect to server. Try to reconnect...\n";
+                }
+            }
+            else
+            {
+                cerr << "BTRuntimeError (" << e.errNumber() << ") " << e.what() << ": " << strerror(e.errNumber()) << "\n";
+            }
         }
     } 
 }
@@ -72,7 +81,7 @@ void acc::CommThread::commLoop(char const *remoteMAC)
 
         if (noValidMsgRxCounter > 50U)
         {
-            throw runtime_error("Connection closed by server");
+            throw BTRuntimeError("Connection closed by server");
         }
 
         // Sleep 1ms, minimize latency of receiving reading message
