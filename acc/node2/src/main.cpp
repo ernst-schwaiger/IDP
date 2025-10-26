@@ -1,7 +1,6 @@
 #include <iostream>
 #include <optional>
 #include <QApplication>
-#include <CryptoComm.h>
 
 #include "MainWindow.h"
 #include "Node2Types.h"
@@ -131,7 +130,6 @@ static void *commThreadFunc(void *arg)
 
     return nullptr;
 }
-
 
 int main(int argc, char *argv[])
 {

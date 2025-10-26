@@ -48,6 +48,7 @@ void acc::CommThread::commLoop(char const *remoteMAC)
     // counter;  a timestamp indicating the ms since the Bluetooth connection
     // was established between Node 1, Node 2
     uint32_t counter = 0;
+    uint32_t noValidMsgRxCounter = 0;
 
     while (!terminateApp())
     {
@@ -62,6 +63,16 @@ void acc::CommThread::commLoop(char const *remoteMAC)
                 DistanceReadingInfoType reading = { getTimestampMs(), static_cast<uint16_t>((msgBuf[0] << 8) + msgBuf[1]) };
                 setCurrentDistanceReading(&reading);     
             }
+            noValidMsgRxCounter = 0;
+        }
+        else
+        {
+            noValidMsgRxCounter++;
+        }
+
+        if (noValidMsgRxCounter > 50U)
+        {
+            throw runtime_error("Connection closed by server");
         }
 
         // Sleep 1ms, minimize latency of receiving reading message
