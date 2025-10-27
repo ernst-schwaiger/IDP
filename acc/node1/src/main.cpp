@@ -44,10 +44,9 @@ void setCurrentDistanceReading(uint16_t value)
 
 static void *sensorThreadFunc(void *)
 {
-    SensorThread t(gTerminateApplication);
-
     try
     {
+        SensorThread t(gTerminateApplication);
         t.run();
     }
     catch(const std::exception& e)
