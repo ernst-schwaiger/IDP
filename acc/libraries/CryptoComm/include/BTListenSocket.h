@@ -21,7 +21,7 @@ private:
 
     static void makeBTDeviceVisible(void);
     
-    int m_listenSocket;
+    int m_listenSocket; // Deviation Dir 4.6: type used in external socket API
     struct sockaddr_l2 m_local_addr;
 };
 

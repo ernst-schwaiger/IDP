@@ -18,7 +18,7 @@ public:
         m_errorMessage(errorMessage)
     {}
 
-    [[ nodiscard ]] const char* what() const noexcept override 
+    [[ nodiscard ]] const char* what() const noexcept override // Deviation Dir 4.6: overrides standardized std::exception API
     {
         return m_errorMessage.c_str();
     }
@@ -26,7 +26,7 @@ public:
     [[ nodiscard ]] int errNumber() const noexcept { return m_errorNumber; }
 
 private:
-    int m_errorNumber;
+    int m_errorNumber; // Deviation Dir 4.6: type used in external global errno variable
     std::string m_errorMessage;
 };
 

@@ -153,6 +153,6 @@ See also:
 - move initializers of members into MainWindow constructor. (Lorenzo)
 - Remove obsolete state variables in MainWindow (all state is now kept in global variable, protected with a lock) (Lorenzo)
 - Create services that autostart node 1 and node 2 apps. (Ask whether this is required)
-- Use proper data types in GUI: uint32_t for speed in m/s, uint16_t for distance (avoid signed data types) (Lorenzo)
 - Clarify WLAN router issue in lab (Stefan)
-- Add requirement references to production code (All)
+- Add requirement references to production code/MISRA 7.3 Requirements traceability  (All)
+- Replace char/short/int/long types by uintxyz_t wherever possible/MISRA Dir 4.6 typedefs that indicate size and signedness should be used in place of the basic numerical types (MainWindow.cpp|.h only, Lorenzo)

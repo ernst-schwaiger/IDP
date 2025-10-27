@@ -109,7 +109,7 @@ static void *accThreadFunc(void *)
 
 static void *commThreadFunc(void *arg)
 {
-    char *remoteMAC = reinterpret_cast<char *>(arg);
+    char *remoteMAC = reinterpret_cast<char *>(arg); // Deviation Dir 4.6: type passed via main() function
 
     CommThread t(gTerminateApplication, remoteMAC);
     

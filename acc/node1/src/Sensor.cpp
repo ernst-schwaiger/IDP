@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <iostream>
 #include <stdexcept>
+#include <format>
 
 // comment this out if no sensort are mounted to node 1
 #define PROXIMITY_SENSORS_MOUNTED
@@ -21,13 +22,10 @@ namespace acc
 Sensor::Sensor(uint8_t trigPin, uint8_t echoPin) : trigPin(trigPin), echoPin(echoPin)
 {
 #ifdef PROXIMITY_SENSORS_MOUNTED
-    int rc = gpioInitialise();
+    int rc = gpioInitialise(); // Deviation Dir 4.6: type used in external gpio API
     if (rc < 0)
     {
-        char msgBuf[80];
-        sprintf(msgBuf, "pigpio init failed: %d", rc);
-
-        throw runtime_error(msgBuf);
+        throw runtime_error(std::format("pigpio init failed: {}", rc));
     }
 
     gpioSetMode(trigPin, PI_OUTPUT);

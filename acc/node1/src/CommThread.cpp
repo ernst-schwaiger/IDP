@@ -51,7 +51,7 @@ void acc::CommThread::commLoop(acc::BTListenSocket &listenSocket)
         cout << "Connection to client established.\n";
     }
 
-    long baselineMs = getTimestampMs();
+    uint64_t baselineMs = getTimestampMs();
 
     while (!terminateApp()) // we leave this one only via failed send/receive operations
     {

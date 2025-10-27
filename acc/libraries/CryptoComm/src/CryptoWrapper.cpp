@@ -37,7 +37,7 @@ CryptoWrapper::CryptoWrapper(void)
         throw runtime_error("Could not register rijndael/aes cipher");
     }
 
-    int wprng = find_prng("sprng");
+    int wprng = find_prng("sprng"); // Deviation Dir 4.6: type used in external LibTomCrypt API
 
     if (wprng < 0)
     {
@@ -101,7 +101,7 @@ uint8_t CryptoWrapper::generateHMAC(std::span<uint8_t const> data, std::span<uin
         return 3U;
     }
 
-    unsigned long hmac_size = hmac.size();
+    unsigned long hmac_size = hmac.size(); // Deviation Dir 4.6: type used in external TomCrypt library
     if (hmac_done(&hs, &hmac[0], &hmac_size) != CRYPT_OK)
     {
         return 4U;

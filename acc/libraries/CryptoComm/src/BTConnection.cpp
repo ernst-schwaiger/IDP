@@ -25,7 +25,7 @@ BTConnection::BTConnection(BTListenSocket const *pListenSocket) :
     setNonBlockingAndPoll(m_socket, false);
 }
 
-BTConnection::BTConnection(char const *remoteMAC) : 
+BTConnection::BTConnection(char const *remoteMAC) : // Deviation Dir 4.6: type passed via main() function
     m_cryptoWrapper{},
     m_remote_addr{ AF_BLUETOOTH, htobs(0x1001), { 0 }, 0, 0 }
 {
@@ -219,7 +219,7 @@ uint32_t BTConnection::deSerializeUint32(uint8_t const *pBuf)
 
 void BTConnection::setNonBlockingAndPoll(int socketHandle, bool isClient) const
 {
-    int flags = fcntl(socketHandle, F_GETFL, 0); 
+    int flags = fcntl(socketHandle, F_GETFL, 0); // Deviation Dir 4.6: type used in external socket API
     if (fcntl(socketHandle, F_SETFL, flags | O_NONBLOCK) < 0)
     {
         throw BTRuntimeError("Failed to configure socket as nonblocking");

@@ -22,7 +22,7 @@ public:
     // Server Constructor
     explicit BTConnection(BTListenSocket const *pListenSocket);
     // Client constructor
-    explicit BTConnection(char const *remoteMAC);
+    explicit BTConnection(char const *remoteMAC); // Deviation Dir 4.6: type passed via main() function
     ~BTConnection(void);
 
     [[ nodiscard ]] bool keyExchangeClient(void);
@@ -43,7 +43,7 @@ private:
     void setNonBlockingAndPoll(int socketHandle, bool isClient) const;
 
     CryptoWrapper m_cryptoWrapper;
-    int m_socket;
+    int m_socket; // Deviation Dir 4.6: type used in external socket API
     struct sockaddr_l2 m_remote_addr;
 };
 
