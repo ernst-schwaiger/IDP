@@ -24,7 +24,7 @@ static constexpr uint16_t DISTANCE_READING_ERROR_2 = 65535U;
 static DistanceReadingType gCurrentDistanceReading = { { 0UL, 0xffff}, PTHREAD_MUTEX_INITIALIZER };
 
 // global vehicle state, read and written by acc thread and GUI/main thread, shall only be accessed via get/set functions
-static VehicleStateType gVehicleState = { {AccState::Off, 0U, 0U }, PTHREAD_MUTEX_INITIALIZER};
+static VehicleStateType gVehicleState = { {AccState::Off, 0U, 0U, 0U }, PTHREAD_MUTEX_INITIALIZER};
 
 // global app termination flag; no critical sections required
 static bool gTerminateApplication = false;
@@ -58,10 +58,11 @@ void getCurrentVehicleState(VehicleStateInfoType *pVehicleState)
     pVehicleState->accState = gVehicleState.info.accState;
     pVehicleState->distanceMeters = gVehicleState.info.distanceMeters;
     pVehicleState->speedMetersPerHour = gVehicleState.info.speedMetersPerHour;
+    pVehicleState->accSetSpeedMetersPerHour = gVehicleState.info.accSetSpeedMetersPerHour;
     pthread_mutex_unlock(&gVehicleState.lock);
 }
 
-void setCurrentVehicleState(AccState const *pACCState, uint32_t const *pSpeedMetersPerHour, uint16_t const *pDistanceMeters)
+void setCurrentVehicleState(AccState const *pACCState, uint32_t const *pSpeedMetersPerHour, uint16_t const *pDistanceMeters, uint32_t const *pAccSetSpeedMetersPerHour)
 {
     pthread_mutex_lock(&gVehicleState.lock);
     if (pACCState != nullptr)
@@ -78,6 +79,11 @@ void setCurrentVehicleState(AccState const *pACCState, uint32_t const *pSpeedMet
     if (pDistanceMeters != nullptr)
     {
         gVehicleState.info.distanceMeters = *pDistanceMeters;
+    }
+
+    if (pAccSetSpeedMetersPerHour != nullptr)
+    {
+        gVehicleState.info.accSetSpeedMetersPerHour = *pAccSetSpeedMetersPerHour;
     }
 
     pthread_mutex_unlock(&gVehicleState.lock);

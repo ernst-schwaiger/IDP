@@ -3,12 +3,14 @@
 #include <Helper.h>
 #include "ACCThread.h"
 
+using namespace acc;
+
 void acc::ACCThread::run(void)
 {
     while (!terminateApp())
     {
         // Get global vehicle state
-        VehicleStateInfoType currentVehicleState = { AccState::Off, 0U, 0U };
+        VehicleStateInfoType currentVehicleState = { AccState::Off, 0U, 0U, 0U };
         getCurrentVehicleState(&currentVehicleState);
         bool updateAccState = false;
 
@@ -38,7 +40,7 @@ void acc::ACCThread::run(void)
         {
             if (currentVehicleState.accState == AccState::On)
             {
-                currentVehicleState.speedMetersPerHour = accFunc(latestValidDistanceReading.distance, currentVehicleState.speedMetersPerHour);
+                currentVehicleState.speedMetersPerHour = accFunc(latestValidDistanceReading.distance, currentVehicleState.speedMetersPerHour, currentVehicleState.accSetSpeedMetersPerHour);
             }
             
             // Comment in for debugging.
@@ -61,7 +63,7 @@ void acc::ACCThread::run(void)
             pSpeedMetersPerHour = &currentVehicleState.speedMetersPerHour;
         }
 
-        // Write back new Global Vehicle State
+        // Write back new Global Vehicle State (accSetSpeed wird von GUI gesetzt)
         setCurrentVehicleState(pAccState, pSpeedMetersPerHour, pDistanceMeters);
 
         // Sleep 50ms
@@ -69,11 +71,19 @@ void acc::ACCThread::run(void)
     }
 }
 
-uint32_t acc::ACCThread::accFunc(uint16_t currentDistance, uint32_t currentSpeedMetersPerHour)
+uint32_t acc::ACCThread::accFunc(uint16_t currentDistance, uint32_t currentSpeedMetersPerHour, uint32_t maxAllowedSpeedMetersPerHour)
 {
     // FIXME: Also take the set speed of the ACC into account here!
     // "Halber Tacho"
     uint32_t targetSpeedMetersPerHour = std::min<uint32_t>(currentDistance / 2U, VEHICLE_SPEED_MAX) * 1000U;
+
+    // NEW: Max-Geschwindigkeit aus ACC-Setpoint berücksichtigen (0 => nicht gesetzt)
+    uint32_t target = targetSpeedMetersPerHour;
+    if (maxAllowedSpeedMetersPerHour > 0U)
+    {
+        target = std::min<uint32_t>(target, maxAllowedSpeedMetersPerHour);
+    }
+
     int64_t speedDifference = static_cast<int64_t>(targetSpeedMetersPerHour) - static_cast<int64_t>(currentSpeedMetersPerHour);
     // We assume that in each iteration, we cover 10% of the difference current speed / target speed.
     double appliedSpeedDelta = (speedDifference / 10.0);

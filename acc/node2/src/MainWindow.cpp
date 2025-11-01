@@ -168,10 +168,13 @@ void MainWindow::onAccToggled(bool)
         newAccState = (vehicleState.accState == AccState::Off) ? AccState::On : AccState::Off; 
     }
 
+    // NEW: max. erlaubte Geschwindigkeit beim Einschalten speichern, sonst 0
+    uint32_t newMax = (newAccState == AccState::On) ? vehicleState.speedMetersPerHour : 0U;
+
     // Update GUI
     updateAccState(newAccState);
     // Update Global Vehicle State
-    setCurrentVehicleState(&newAccState, nullptr, nullptr);
+    setCurrentVehicleState(&newAccState, nullptr, &newMax);
 }
 
 void MainWindow::onSpeedUp() 

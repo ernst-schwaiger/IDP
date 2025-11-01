@@ -14,7 +14,7 @@ public:
 
 private:
 
-    [[nodiscard]] uint32_t accFunc(uint16_t currentDistance, uint32_t currentSpeedMetersPerHour);
+    [[nodiscard]] uint32_t accFunc(uint16_t currentDistance, uint32_t currentSpeedMetersPerHour, uint32_t maxAllowedSpeedMetersPerHour);
     DistanceReadingInfoType latestValidDistanceReading;
 };    
 }
