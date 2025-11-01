@@ -174,7 +174,7 @@ void MainWindow::onAccToggled(bool)
     // Update GUI
     updateAccState(newAccState);
     // Update Global Vehicle State
-    setCurrentVehicleState(&newAccState, nullptr, &newMax);
+    setCurrentVehicleState(&newAccState, nullptr, nullptr, &newMax);
 }
 
 void MainWindow::onSpeedUp() 
