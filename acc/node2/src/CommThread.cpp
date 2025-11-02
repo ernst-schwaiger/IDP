@@ -39,6 +39,10 @@ void acc::CommThread::run(void)
     } 
 }
 
+// @Lorenzo uncomment the following line for testing w/o BT
+#define NO_BT_COMM 1
+
+#ifndef NO_BT_COMM
 void acc::CommThread::commLoop(char const *remoteMAC) // Deviation Dir 4.6: type passed via main() function
 {
     // Set up a BT connection to node1
@@ -88,3 +92,32 @@ void acc::CommThread::commLoop(char const *remoteMAC) // Deviation Dir 4.6: type
         usleep(1'000U);        
     }
 }
+#else
+void acc::CommThread::commLoop(char const *remoteMAC) // Deviation Dir 4.6: type passed via main() function
+{
+    // At this point, we have a connection set up
+    cout << "Simulating rx from " << remoteMAC << "...\n";
+
+    uint16_t currentDistance = 150; // The distance we start from
+    bool increaseDistance = false;
+
+    while (!terminateApp())
+    {
+        DistanceReadingInfoType reading = { getTimestampMs(), static_cast<uint16_t>(currentDistance) };
+        setCurrentDistanceReading(&reading);
+
+        // Implement a simple gaining/dropping slope between 100 and 200ms distance
+        if (currentDistance == 100)
+        {
+            increaseDistance = true;
+        }
+        else if (currentDistance == 200)
+        {
+            increaseDistance = false;
+        }
+
+        currentDistance = increaseDistance ? (currentDistance + 1) : (currentDistance - 1);
+        usleep(25'000U);
+    }
+}
+#endif
