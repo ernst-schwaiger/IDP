@@ -77,11 +77,10 @@ uint32_t acc::ACCThread::accFunc(uint16_t currentDistance, uint32_t currentSpeed
     // "Halber Tacho"
     uint32_t targetSpeedMetersPerHour = std::min<uint32_t>(currentDistance / 2U, VEHICLE_SPEED_MAX) * 1000U;
 
-    // NEW: Max-Geschwindigkeit aus ACC-Setpoint berücksichtigen (0 => nicht gesetzt)
-    uint32_t target = targetSpeedMetersPerHour;
+    // Don't allow the vehice to increase speed beyond the speed when acc has been turned on
     if (maxAllowedSpeedMetersPerHour > 0U)
     {
-        target = std::min<uint32_t>(target, maxAllowedSpeedMetersPerHour);
+        targetSpeedMetersPerHour = std::min<uint32_t>(targetSpeedMetersPerHour, maxAllowedSpeedMetersPerHour);
     }
 
     int64_t speedDifference = static_cast<int64_t>(targetSpeedMetersPerHour) - static_cast<int64_t>(currentSpeedMetersPerHour);
