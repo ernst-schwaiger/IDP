@@ -78,6 +78,7 @@ int main()
     {
         // Start Sensor thread
         pthread_t sensorThreadHandle;
+            cout << "test" << std::endl;
         if (pthread_create(&sensorThreadHandle, nullptr, sensorThreadFunc, nullptr)) 
         {
             cerr << "Error creating sensor thread\n";
