@@ -90,6 +90,7 @@ Pairing can be done by running `bluetoothctl` on both nodes in parallel:
     - agent on
 - On Node 1 do
     - discoverable yes
+    - pairable yes
 - On Node 2 do
     - pair XX:XX:XX:XX:XX:XX (Bluetooth MAC Address of Node 1)
     - trust XX:XX:XX:XX:XX:XX (Bluetooth MAC Address of Node 1)
@@ -156,3 +157,4 @@ See also:
 - Clarify WLAN router issue in lab (Stefan)
 - Add requirement references to production code/MISRA 7.3 Requirements traceability  (All)
 - Replace char/short/int/long types by uintxyz_t wherever possible/MISRA Dir 4.6 typedefs that indicate size and signedness should be used in place of the basic numerical types (MainWindow.cpp|.h only, Lorenzo)
+- Remove test switches in CommThread of node2 and Sensor.cpp (No dead code!)

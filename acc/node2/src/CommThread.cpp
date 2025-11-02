@@ -40,7 +40,7 @@ void acc::CommThread::run(void)
 }
 
 // @Lorenzo uncomment the following line for testing w/o BT
-#define NO_BT_COMM 1
+//#define NO_BT_COMM 1
 
 #ifndef NO_BT_COMM
 void acc::CommThread::commLoop(char const *remoteMAC) // Deviation Dir 4.6: type passed via main() function
