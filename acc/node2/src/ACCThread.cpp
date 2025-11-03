@@ -5,6 +5,11 @@
 
 using namespace acc;
 
+namespace
+{
+    constexpr uint32_t ACC_MIN_SPEED_METERS_PER_HOUR = 30000U; // NEW: Mindestgeschwindigkeit für ACC
+}
+
 void acc::ACCThread::run(void)
 {
     while (!terminateApp())
@@ -13,6 +18,14 @@ void acc::ACCThread::run(void)
         VehicleStateInfoType currentVehicleState = { AccState::Off, 0U, 0U, 0U };
         getCurrentVehicleState(&currentVehicleState);
         bool updateAccState = false;
+
+        // NEW: ACC automatisch ausschalten, wenn Speed < 30 km/h
+        if ((currentVehicleState.accState == AccState::On) &&
+            (currentVehicleState.speedMetersPerHour < ACC_MIN_SPEED_METERS_PER_HOUR))
+        {
+            currentVehicleState.accState = AccState::Off;
+            updateAccState = true;
+        }
 
         // Get most recently received distance reading
         DistanceReadingInfoType reading;
