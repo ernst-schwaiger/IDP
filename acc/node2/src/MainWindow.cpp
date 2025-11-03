@@ -288,6 +288,27 @@ void MainWindow::onSimTick()
     VehicleStateInfoType vehicleState;
     getCurrentVehicleState(&vehicleState);
 
+    // NEW: Business-Logik - wenn ACC von Fault auf wieder "operabel" wechselt,
+    //      erzwingen wir ACC OFF, unabhängig vom Button-Zustand.
+    if (lastAccState_ == AccState::Fault &&
+        vehicleState.accState != AccState::Fault)
+    {
+        // globaler Zustand auf OFF
+        AccState offState = AccState::Off;
+        vehicleState.accState = AccState::Off;
+
+        // Button sicher auf "nicht gedrückt" setzen, ohne Signal auszulösen
+        ui->btnACC->blockSignals(true);
+        ui->btnACC->setChecked(false);
+        ui->btnACC->blockSignals(false);
+
+        // nur den ACC-Zustand ins globale VehicleState zurückschreiben
+        setCurrentVehicleState(&offState, nullptr, nullptr);
+    }
+
+    // aktuellen Zustand für nächsten Tick merken
+    lastAccState_ = vehicleState.accState;
+
     setDistanceMeters(vehicleState.distanceMeters, !isValidDistance(vehicleState.distanceMeters));
     updateAccState(vehicleState.accState);
 

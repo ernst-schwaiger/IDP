@@ -43,4 +43,7 @@ private:
     bool fault_         = false;
 
     QTimer* simTimer_   = nullptr;
+
+    // NEW: letzter bekannter ACC-Zustand
+    acc::AccState lastAccState_ = acc::AccState::Off;
 };
