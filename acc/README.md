@@ -158,3 +158,34 @@ See also:
 - Add requirement references to production code/MISRA 7.3 Requirements traceability  (All)
 - Replace char/short/int/long types by uintxyz_t wherever possible/MISRA Dir 4.6 typedefs that indicate size and signedness should be used in place of the basic numerical types (MainWindow.cpp|.h only, Lorenzo)
 - Remove test switches in CommThread of node2 and Sensor.cpp (No dead code!)
+
+```
+// Safety related requirements: 
+//Saf-REQ-1: The ACC shall be able to respond to a measurement error within 1 second by deactivating itself. 
+//Saf-REQ-2: The ACC shall automatically detect sensor failure by checking the measured values for plausibility. 
+//Saf-REQ-3: The ACC shall inform the driver of a detected sensor failure by means of a red LED indicator on the display. 
+//Saf-REQ-4: The ACC shall switch off when a sensor failure is detected. 
+//Saf-REQ-5: The ACC shall automatically detect a failure of the communication subsystem (Bluetooth) by recognizing that a packet could not be sent, or by recognizing that no response is received within a defined period (500 ms) after a successful transmission. 
+//Saf-REQ-6: The ACC shall inform the driver of a detected communication subsystem failure by switching on a red warning LED. 
+//Saf-REQ-7: The ACC shall automatically switch off when a communication subsystem (Bluetooth) error is detected. 
+//Saf-REQ-8: If a failure of the communication subsystem (Bluetooth) is detected, the ACC shall initiate a connection. 
+//Saf-REQ-9: The ACC shall inform the driver about the status of the ACC via a green status LED and the ACC push button display (ACC ON/ACC OFF). 
+//Saf-REQ-10: The ACC shall prevent the user from activating it if the sensors or communication have failed. 
+//Saf-REQ-11: Once activated, the ACC shall note the current speed of the vehicle and not exceed it. 
+//Saf-REQ-12: The ACC shall deactivate when the vehicle speed falls below 30 km/h. 
+//Saf-REQ-13: The ACC shall reduce the speed to n/2 km/h at a measured distance of n meters. 
+//
+//Security related requirements: 
+//Sec-REQ-1: The ACC shall regenerate a new session key after a new Bluetooth connection has been set up. 
+//Sec-REQ-2: The ACC shall protect the integrity of the messages using an HMAC. 
+//Sec-REQ-3: The ACC shall prevent replay attacks with a unique timestamp field. 
+//
+//Requirements with no influence on Safety and Security:
+//REQ-w-no-Saf-Sec-1: The ACC display shall have a black background. 
+//REQ-w-no-Saf-Sec-2: The speed shall be displayed in km/h. 
+//REQ-w-no-Saf-Sec-3: The distance to the vehicle in front shall be displayed in meters. 
+//REQ-w-no-Saf-Sec-4: The speed shall be displayed as an integer value without decimal places. 
+//REQ-w-no-Saf-Sec-5: There shall be one button for acceleration and one for deceleration in the GUI. 
+//REQ-w-no-Saf-Sec-6: The GUI shall allow the speed to be continuously increased or decreased by holding down the acceleration and deceleration buttons without the user having to tap repeatedly. 
+//REQ-w-no-Saf-Sec-7: Pressing the acceleration and one for deceleration buttons while ACC is in the ON state shall put the ACC in the OFF state.
+```
