@@ -38,12 +38,12 @@ private:
     Ui::MainWindow *ui;
     bool &bTerminateApp_;
 
-    int  currentSpeed_  = 0;
-    bool accAvailable_  = true;
-    bool fault_         = false;
+    int  currentSpeed_;
+    bool accAvailable_;
+    bool fault_;
 
-    QTimer* simTimer_   = nullptr;
+    QTimer* simTimer_;
 
     // NEW: letzter bekannter ACC-Zustand
-    acc::AccState lastAccState_ = acc::AccState::Off;
+    acc::AccState lastAccState_;
 };

@@ -15,7 +15,14 @@ using namespace std;
 using namespace acc;
 
 MainWindow::MainWindow(bool &bTerminateApp, QWidget *parent)
-    : QMainWindow(parent), ui(new Ui::MainWindow), bTerminateApp_(bTerminateApp)
+    : QMainWindow(parent),
+    ui(new Ui::MainWindow),
+    bTerminateApp_(bTerminateApp),
+    currentSpeed_(0),
+    accAvailable_(true), 
+    fault_(false),
+    simTimer_(nullptr),
+    lastAccState_(acc::AccState::Off)
 {
     ui->setupUi(this);
 
@@ -44,11 +51,8 @@ MainWindow::MainWindow(bool &bTerminateApp, QWidget *parent)
     }
 
     // --- Startzustände der GUI ---
-    currentSpeed_ = 0;
     setSpeedKmh(currentSpeed_);
     setDistanceMeters(0.0, /*accFailed=*/true); // leer bis Messwert „kommt“
-    fault_ = false;
-    accAvailable_ = true;
     updateAccState(AccState::Off);
     showAlarm(false);
     updateHealthLed();
