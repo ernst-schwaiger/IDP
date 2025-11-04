@@ -262,9 +262,16 @@ void MainWindow::updateAccState(AccState s) {
 
 void MainWindow::updateHealthLed() {
     if (!ui->ledACC) return;
+
+    VehicleStateInfoType vehicleState;
+    getCurrentVehicleState(&vehicleState);
+
+    // "Fehler" liegt vor, wenn entweder ein allgemeiner Fault (fault_)
+    // oder ein ACC-Fault (accState == Fault) aktiv ist.
+    const bool anyFault = fault_ || (vehicleState.accState == AccState::Fault);
+
     const char* base = "border:2px solid #444; border-radius:24px;";
-    ui->ledACC->setStyleSheet(QString("background-color:%1; %2")
-                              .arg(fault_ ? "#ff3b30" : "#32CD32").arg(base));
+    ui->ledACC->setStyleSheet(QString("background-color:%1; %2").arg(anyFault ? "#ff3b30" : "#32CD32").arg(base));
     ui->ledACC->raise();
 }
 
@@ -311,6 +318,7 @@ void MainWindow::onSimTick()
 
     setDistanceMeters(vehicleState.distanceMeters, !isValidDistance(vehicleState.distanceMeters));
     updateAccState(vehicleState.accState);
+    updateHealthLed();
 
     if (vehicleState.accState == AccState::On)
     {
