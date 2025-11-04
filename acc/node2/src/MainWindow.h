@@ -2,6 +2,7 @@
 
 #include <QMainWindow>
 #include <QTimer>
+#include <cstdint> 
 
 #include "Node2Types.h"
 
@@ -16,7 +17,7 @@ public:
     ~MainWindow();
 
 public slots:
-    void setSpeedKmh(int kmh);
+    void setSpeedKmh(std::int32_t kmh);
     void setDistanceMeters(double m, bool accFailed = false);
     void setAccAvailable(bool ok);
     void setFault(bool faultOn);
@@ -32,15 +33,11 @@ private:
     void setupRightGridLayout();     // Zeilen/Spalten für gridLayout_rechts setzen
     void updateAccState(acc::AccState s); // Button-Text/Farbe/Enable
     void updateHealthLed();          // LED rot/grün je nach fault_
-    void updateSpeedStyle(int kmh);  // Farbe der LCD-Anzeige
+    void updateSpeedStyle(std::int32_t kmh);  // Farbe der LCD-Anzeige
     void showAlarm(bool on);         // ggf. später für Alarm-Frame
 
     Ui::MainWindow *ui;
     bool &bTerminateApp_;
-
-    int  currentSpeed_;
-    bool accAvailable_;
-    bool fault_;
 
     QTimer* simTimer_;
 

@@ -2,13 +2,14 @@
 #include "ui_mainwindow.h"
 
 #include <algorithm>
+#include <cstdint> 
 #include <QGridLayout>
 #include <QShortcut>
 #include <QLabel>
 #include <QFont>
 
 namespace {
-inline int clamp(int v, int lo, int hi) { return std::min(hi, std::max(lo, v)); }
+inline std::int32_t clamp(std::int32_t v, std::int32_t lo, std::int32_t hi) { return std::min(hi, std::max(lo, v)); }
 }
 
 using namespace std;
@@ -18,9 +19,6 @@ MainWindow::MainWindow(bool &bTerminateApp, QWidget *parent)
     : QMainWindow(parent),
     ui(new Ui::MainWindow),
     bTerminateApp_(bTerminateApp),
-    currentSpeed_(0),
-    accAvailable_(true), 
-    fault_(false),
     simTimer_(nullptr),
     lastAccState_(acc::AccState::Off)
 {
@@ -51,7 +49,7 @@ MainWindow::MainWindow(bool &bTerminateApp, QWidget *parent)
     }
 
     // --- Startzustände der GUI ---
-    setSpeedKmh(currentSpeed_);
+    setSpeedKmh(0);
     setDistanceMeters(0.0, /*accFailed=*/true); // leer bis Messwert „kommt“
     updateAccState(AccState::Off);
     showAlarm(false);
@@ -117,10 +115,10 @@ void MainWindow::setupRightGridLayout() {
 // Setter-Methoden für Speed, Distance, ACC-Verfügbarkeit, Fault
 // ------------------------------------------------------------------
 
-void MainWindow::setSpeedKmh(int kmh) {
-    currentSpeed_ = clamp(kmh, 0, 200);
-    ui->lcdNumberSpeed->display(currentSpeed_);
-    updateSpeedStyle(currentSpeed_);
+void MainWindow::setSpeedKmh(std::int32_t kmh) {
+    std::int32_t clamped = clamp(kmh, 0, 200);
+    ui->lcdNumberSpeed->display(clamped);
+    updateSpeedStyle(clamped);
 }
 
 void MainWindow::setDistanceMeters(double m, bool accFailed) {
@@ -132,20 +130,34 @@ void MainWindow::setDistanceMeters(double m, bool accFailed) {
 }
 
 void MainWindow::setAccAvailable(bool ok) {
-    accAvailable_ = ok;
+    
+    VehicleStateInfoType vehicleState;
+    getCurrentVehicleState(&vehicleState);
+
     if (!ok) { updateAccState(AccState::Off); showAlarm(true); }
-    else if (!fault_) { showAlarm(false); }
+    else
+    {
+        // Verfügbarkeit wieder hergestellt --> Anzeige an globalen Zustand anpassen
+        updateAccState(vehicleState.accState);
+        showAlarm(vehicleState.accState == AccState::Fault);
+    }
     updateHealthLed();
 }
 
 void MainWindow::setFault(bool faultOn) {
-    fault_ = faultOn;
-    if (fault_) {
+    
+    // faultOn signalisiert, dass ein Fehler aufgetreten bzw. behoben wurde.
+    // Der eigentliche ACC-Zustand liegt aber im globalen VehicleState.
+    VehicleStateInfoType vehicleState;
+    getCurrentVehicleState(&vehicleState);
+
+    if (faultOn) {
         updateAccState(AccState::Fault);
         showAlarm(true);
-    } else {
-        updateAccState(ui->btnACC->isChecked() ? AccState::On : AccState::Off);
-        showAlarm(!accAvailable_);
+    } 
+    else {
+        updateAccState(vehicleState.accState);
+        showAlarm(false);
     }
     updateHealthLed();
 }
@@ -187,8 +199,8 @@ void MainWindow::onSpeedUp()
     getCurrentVehicleState(&vehicleState);
 
     // Increase current speed, up to VEHICLE_SPEED_MAX
-    vehicleState.speedMetersPerHour += 5000;
-    vehicleState.speedMetersPerHour = min<uint32_t>(vehicleState.speedMetersPerHour, VEHICLE_SPEED_MAX * 1000);
+    vehicleState.speedMetersPerHour += 5000U;
+    vehicleState.speedMetersPerHour = min<uint32_t>(vehicleState.speedMetersPerHour, VEHICLE_SPEED_MAX * 1000U);
 
     // If ACC is turned on, turn it off now
     AccState *pAccState = nullptr;
@@ -201,7 +213,7 @@ void MainWindow::onSpeedUp()
     }
 
     // set speed in GUI (calc back to kilometers per hour)
-    setSpeedKmh(vehicleState.speedMetersPerHour / 1000);
+    setSpeedKmh(static_cast<std::int32_t>(vehicleState.speedMetersPerHour / 1000U));
     // write back global vehicle state
     setCurrentVehicleState(pAccState, &vehicleState.speedMetersPerHour, nullptr);
 }
@@ -226,7 +238,7 @@ void MainWindow::onSpeedDown()
     }
 
     // set speed in GUI (calc back to kilometers per hour)
-    setSpeedKmh(vehicleState.speedMetersPerHour / 1000);
+    setSpeedKmh(static_cast<std::int32_t>(vehicleState.speedMetersPerHour / 1000U));
     // write back global vehicle state
     setCurrentVehicleState(pAccState, &vehicleState.speedMetersPerHour, nullptr);
 }
@@ -253,15 +265,9 @@ void MainWindow::updateAccState(AccState s) {
         ui->btnACC->setStyleSheet(QString("%1 color:#ff3b30; font-weight:600;").arg(baseBtn));
         break;
     }
-
-    if (s != AccState::Fault)
-    {
-        ui->btnACC->setEnabled(accAvailable_ && !fault_);
-    }
-    else
-    {
-        ui->btnACC->setEnabled(false);
-    }
+        
+    ui->btnACC->setEnabled(s != AccState::Fault);
+    
 }
 
 void MainWindow::updateHealthLed() {
@@ -272,14 +278,14 @@ void MainWindow::updateHealthLed() {
 
     // "Fehler" liegt vor, wenn entweder ein allgemeiner Fault (fault_)
     // oder ein ACC-Fault (accState == Fault) aktiv ist.
-    const bool anyFault = fault_ || (vehicleState.accState == AccState::Fault);
+    const bool anyFault = (vehicleState.accState == AccState::Fault);
 
     const char* base = "border:2px solid #444; border-radius:24px;";
     ui->ledACC->setStyleSheet(QString("background-color:%1; %2").arg(anyFault ? "#ff3b30" : "#32CD32").arg(base));
     ui->ledACC->raise();
 }
 
-void MainWindow::updateSpeedStyle(int kmh) {
+void MainWindow::updateSpeedStyle(std::int32_t kmh) {
     // 0..70 grün, 71..130 gelb, >130 rot (nur Beispiel)
     QString base = "background: black; color:%1;";
     QString col  = (kmh <= 70) ? "#32CD32" : (kmh <= 130) ? "#ffd166" : "#ff3b30";
@@ -326,7 +332,7 @@ void MainWindow::onSimTick()
 
     if (vehicleState.accState == AccState::On)
     {
-        setSpeedKmh(vehicleState.speedMetersPerHour / 1000);
+        setSpeedKmh(static_cast<std::int32_t>(vehicleState.speedMetersPerHour / 1000U));
     }
 
     if (bTerminateApp_)
