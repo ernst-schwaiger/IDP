@@ -10,9 +10,9 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
-// Requirements traceability (MISRA Dir 7.3) – Node2 GUI
+// Requirements traceability (MISRA Dir 7.3) - Node2 GUI
 //
-// Safety related requirements: 
+// Safety related requirements in this file: 
 //Saf-REQ-3: The ACC shall inform the driver of a detected sensor failure by means of a red LED indicator on the display. 
 //Saf-REQ-6: The ACC shall inform the driver of a detected communication subsystem failure by switching on a red warning LED. 
 //Saf-REQ-9: The ACC shall inform the driver about the status of the ACC via a green status LED and the ACC push button display (ACC ON/ACC OFF). 
@@ -35,24 +35,32 @@ public:
     ~MainWindow();
 
 public slots:
+    // Saf-REQ-9, REQ-w-no-Saf-Sec-2, -4
     void setSpeedKmh(std::int32_t kmh);
+    // Saf-REQ-9, REQ-w-no-Saf-Sec-3
     void setDistanceMeters(double m, bool accFailed = false);
+    // Saf-REQ-3, Saf-REQ-6, Saf-REQ-9, Saf-REQ-10
     void setAccAvailable(bool ok);
+    // Saf-REQ-3, Saf-REQ-6, Saf-REQ-9, Saf-REQ-10
     void setFault(bool faultOn);
 
 private slots:
+    // Saf-REQ-9, Saf-REQ-10, Saf-REQ-11
     void onAccToggled(bool on);
+    // Saf-REQ-11, REQ-w-no-Saf-Sec-5, -6, -7
     void onSpeedUp();
+    // Saf-REQ-11, REQ-w-no-Saf-Sec-5, -6, -7
     void onSpeedDown();
-    void onSimTick();                // einfache Distanz-Simulation
+    void onSimTick();                // periodische Aktualisierung der GUI
 
 private:
 
     void setupRightGridLayout();     // Zeilen/Spalten für gridLayout_rechts setzen
+    // Saf-REQ-9, Saf-REQ-10
     void updateAccState(acc::AccState s); // Button-Text/Farbe/Enable
+    // Saf-REQ-3, Saf-REQ-6, Saf-REQ-9
     void updateHealthLed();          // LED rot/grün je nach fault_
     void updateSpeedStyle(std::int32_t kmh);  // Farbe der LCD-Anzeige
-    void showAlarm(bool on);         // ggf. später für Alarm-Frame
 
     Ui::MainWindow *ui;
     bool &bTerminateApp_;

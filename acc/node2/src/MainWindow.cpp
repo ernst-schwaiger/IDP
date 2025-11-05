@@ -15,6 +15,29 @@ inline std::int32_t clamp(std::int32_t v, std::int32_t lo, std::int32_t hi) { re
 using namespace std;
 using namespace acc;
 
+// Requirements traceability (MISRA Dir 7.3) - Node2 GUI
+//
+// Safety related requirements in this file: 
+//Saf-REQ-1: The ACC shall be able to respond to a measurement error within 1 second by deactivating itself. 
+//Saf-REQ-2: The ACC shall automatically detect sensor failure by checking the measured values for plausibility. 
+//Saf-REQ-3: The ACC shall inform the driver of a detected sensor failure by means of a red LED indicator on the display. 
+//Saf-REQ-4: The ACC shall switch off when a sensor failure is detected. 
+//Saf-REQ-6: The ACC shall inform the driver of a detected communication subsystem failure by switching on a red warning LED. 
+//Saf-REQ-7: The ACC shall automatically switch off when a communication subsystem (Bluetooth) error is detected. 
+//Saf-REQ-9: The ACC shall inform the driver about the status of the ACC via a green status LED and the ACC push button display (ACC ON/ACC OFF). 
+//Saf-REQ-10: The ACC shall prevent the user from activating it if the sensors or communication have failed. 
+//Saf-REQ-11: Once activated, the ACC shall note the current speed of the vehicle and not exceed it. 
+//Saf-REQ-12: The ACC shall deactivate when the vehicle speed falls below 30 km/h. 
+//
+//Requirements with no influence on Safety and Security:
+//REQ-w-no-Saf-Sec-1: The ACC display shall have a black background. 
+//REQ-w-no-Saf-Sec-2: The speed shall be displayed in km/h. 
+//REQ-w-no-Saf-Sec-3: The distance to the vehicle in front shall be displayed in meters. 
+//REQ-w-no-Saf-Sec-4: The speed shall be displayed as an integer value without decimal places. 
+//REQ-w-no-Saf-Sec-5: There shall be one button for acceleration and one for deceleration in the GUI. 
+//REQ-w-no-Saf-Sec-6: The GUI shall allow the speed to be continuously increased or decreased by holding down the acceleration and deceleration buttons without the user having to tap repeatedly. 
+//REQ-w-no-Saf-Sec-7: Pressing the acceleration and one for deceleration buttons while ACC is in the ON state shall put the ACC in the OFF state.
+
 MainWindow::MainWindow(bool &bTerminateApp, QWidget *parent)
     : QMainWindow(parent),
     ui(new Ui::MainWindow),
@@ -49,13 +72,14 @@ MainWindow::MainWindow(bool &bTerminateApp, QWidget *parent)
     }
 
     // --- Startzustände der GUI ---
+    // Saf-REQ-9, REQ-w-no-Saf-Sec-2, 4
     setSpeedKmh(0);
+    // Saf-REQ-9, REQ-w-no-Saf-Sec-3
     setDistanceMeters(0.0, /*accFailed=*/true); // leer bis Messwert „kommt“
     updateAccState(AccState::Off);
-    showAlarm(false);
     updateHealthLed();
 
-    // ACC-Button deutlicher
+    // ACC-Button deutlicher (Saf-REQ-9 - Statusanzeige ACC ON/OFF)
     {
         QFont f = ui->btnACC->font();
         f.setPointSize(18);
@@ -64,6 +88,8 @@ MainWindow::MainWindow(bool &bTerminateApp, QWidget *parent)
     }
 
     // --- Verbindungen zwischen Buttons und Slots ---
+    // REQ-w-no-Saf-Sec-5: ein Button für +Speed, einer für -Speed.
+    // REQ-w-no-Saf-Sec-6: Auto-Repeat ist über .ui-Einstellungen aktiv, hier wird jeder Klick verarbeitet.
     connect(ui->btnACC,       &QPushButton::toggled, this, &MainWindow::onAccToggled);
     connect(ui->btnSpeedUp,   &QPushButton::clicked, this, &MainWindow::onSpeedUp);
     connect(ui->btnSpeedDown, &QPushButton::clicked, this, &MainWindow::onSpeedDown);
@@ -75,7 +101,7 @@ MainWindow::MainWindow(bool &bTerminateApp, QWidget *parent)
     connect(esc,  &QShortcut::activated, this, &QWidget::close);
     connect(quit, &QShortcut::activated, this, &QWidget::close);
 
-    // --- einfache Distanz-Simulation ---
+    // --- periodische Aktualisierung der GUI aus dem globalen VehicleState ---
     simTimer_ = new QTimer(this);
     simTimer_->setInterval(50); // 50ms
     connect(simTimer_, &QTimer::timeout, this, &MainWindow::onSimTick);
@@ -115,12 +141,14 @@ void MainWindow::setupRightGridLayout() {
 // Setter-Methoden für Speed, Distance, ACC-Verfügbarkeit, Fault
 // ------------------------------------------------------------------
 
+// Saf-REQ-9, REQ-w-no-Saf-Sec-2, 4
 void MainWindow::setSpeedKmh(std::int32_t kmh) {
     std::int32_t clamped = clamp(kmh, 0, 200);
     ui->lcdNumberSpeed->display(clamped);
     updateSpeedStyle(clamped);
 }
 
+// Saf-REQ-9, REQ-w-no-Saf-Sec-3
 void MainWindow::setDistanceMeters(double m, bool accFailed) {
     if (accFailed) {
         ui->labelDistanzNummer->setText("");  // nichts anzeigen
@@ -129,21 +157,26 @@ void MainWindow::setDistanceMeters(double m, bool accFailed) {
     ui->labelDistanzNummer->setText(QString::number(m, 'f', 2));
 }
 
+// Saf-REQ-3, Saf-REQ-6, Saf-REQ-9, Saf-REQ-10
 void MainWindow::setAccAvailable(bool ok) {
     
     VehicleStateInfoType vehicleState;
     getCurrentVehicleState(&vehicleState);
 
-    if (!ok) { updateAccState(AccState::Off); showAlarm(true); }
+    // Kommunikations-/Sensorproblem -> ACC aus, Fahrer wird gewarnt.
+    // (Saf-REQ-6, Saf-REQ-7, Saf-REQ-10 - in Kombination mit globalem State)
+    if (!ok) { updateAccState(AccState::Off); }
     else
     {
         // Verfügbarkeit wieder hergestellt --> Anzeige an globalen Zustand anpassen
+        // Saf-REQ-9
         updateAccState(vehicleState.accState);
-        showAlarm(vehicleState.accState == AccState::Fault);
     }
+    // Saf-REQ-3, Saf-REQ-6, Saf-REQ-9
     updateHealthLed();
 }
 
+// Saf-REQ-3, Saf-REQ-6, Saf-REQ-9, Saf-REQ-10
 void MainWindow::setFault(bool faultOn) {
     
     // faultOn signalisiert, dass ein Fehler aufgetreten bzw. behoben wurde.
@@ -152,12 +185,12 @@ void MainWindow::setFault(bool faultOn) {
     getCurrentVehicleState(&vehicleState);
 
     if (faultOn) {
+        // Fault --> Anzeige rot, ACC nicht bedienbar. (Saf-REQ-3, 6, 7, 10)
         updateAccState(AccState::Fault);
-        showAlarm(true);
     } 
     else {
+        // Fault behoben --> Anzeige zurück auf aktuellen ACC-Zustand.
         updateAccState(vehicleState.accState);
-        showAlarm(false);
     }
     updateHealthLed();
 }
@@ -165,7 +198,7 @@ void MainWindow::setFault(bool faultOn) {
 // Button-Slots
 // ------------------------------------------------------------------
 
-
+// Saf-REQ-9, Saf-REQ-10, Saf-REQ-11
 void MainWindow::onAccToggled(bool) 
 {
     AccState newAccState = AccState::Off;
@@ -174,6 +207,7 @@ void MainWindow::onAccToggled(bool)
 
     if (vehicleState.accState == AccState::Fault)
     {
+        // Saf-REQ-10: Aktivierung verhindern, wenn ACC in Fault ist.
         ui->btnACC->blockSignals(true);
         ui->btnACC->setChecked(false);
         ui->btnACC->blockSignals(false);
@@ -184,15 +218,16 @@ void MainWindow::onAccToggled(bool)
         newAccState = (vehicleState.accState == AccState::Off) ? AccState::On : AccState::Off; 
     }
 
-    // NEW: max. erlaubte Geschwindigkeit beim Einschalten speichern, sonst 0
+    // Saf-REQ-11: Beim Einschalten ACC-Set-Speed speichern
     uint32_t newMax = (newAccState == AccState::On) ? vehicleState.speedMetersPerHour : 0U;
 
-    // Update GUI
+    // Update GUI (Saf-REQ-9)
     updateAccState(newAccState);
-    // Update Global Vehicle State
+    // Update Global Vehicle State (Saf-REQ-11)
     setCurrentVehicleState(&newAccState, nullptr, nullptr, &newMax);
 }
 
+// Saf-REQ-11, REQ-w-no-Saf-Sec-5, 6, 7
 void MainWindow::onSpeedUp() 
 {
     VehicleStateInfoType vehicleState;
@@ -202,6 +237,7 @@ void MainWindow::onSpeedUp()
     vehicleState.speedMetersPerHour += 5000U;
     vehicleState.speedMetersPerHour = min<uint32_t>(vehicleState.speedMetersPerHour, VEHICLE_SPEED_MAX * 1000U);
 
+    // Saf-REQ-11, REQ-w-no-Saf-Sec-7
     // If ACC is turned on, turn it off now
     AccState *pAccState = nullptr;
     if (vehicleState.accState == AccState::On)
@@ -218,6 +254,7 @@ void MainWindow::onSpeedUp()
     setCurrentVehicleState(pAccState, &vehicleState.speedMetersPerHour, nullptr);
 }
 
+// Saf-REQ-11, REQ-w-no-Saf-Sec-5, 6, 7
 void MainWindow::onSpeedDown()
 {
     VehicleStateInfoType vehicleState;
@@ -227,6 +264,7 @@ void MainWindow::onSpeedDown()
     uint32_t speedReduction = min(vehicleState.speedMetersPerHour, static_cast<uint32_t>(5000U));
     vehicleState.speedMetersPerHour -= speedReduction;
 
+    // Saf-REQ-11, REQ-w-no-Saf-Sec-7
     // If ACC is turned on, turn it off now
     AccState *pAccState = nullptr;
     if (vehicleState.accState == AccState::On)
@@ -246,6 +284,7 @@ void MainWindow::onSpeedDown()
 // Darstellung von ACC-Status, LED, Speed-Farbe, Alarm
 // ------------------------------------------------------------------
 
+// Saf-REQ-9, Saf-REQ-10
 void MainWindow::updateAccState(AccState s) {
     const char* baseBtn =
         "border:1px solid #666; border-radius:8px; background:transparent;";
@@ -266,10 +305,12 @@ void MainWindow::updateAccState(AccState s) {
         break;
     }
         
+    // Saf-REQ-10: Button nur bedienbar, wenn kein Fault anliegt.
     ui->btnACC->setEnabled(s != AccState::Fault);
     
 }
 
+// Saf-REQ-3, Saf-REQ-6, Saf-REQ-9
 void MainWindow::updateHealthLed() {
     if (!ui->ledACC) return;
 
@@ -292,21 +333,15 @@ void MainWindow::updateSpeedStyle(std::int32_t kmh) {
     ui->lcdNumberSpeed->setStyleSheet(base.arg(col));
 }
 
-void MainWindow::showAlarm(bool on) {
-    Q_UNUSED(on);
-    // Platzhalter – könnte später Alarm-Frame sichtbar machen
-}
-
-// Timer-Callback für Distanz-Simulation
-// ------------------------------------------------------------------
-
+// Saf-REQ-1, 2, 3, 4, 6, 9, 10, 11, 12
+// aktualisiert die GUI
 void MainWindow::onSimTick() 
 {
     VehicleStateInfoType vehicleState;
     getCurrentVehicleState(&vehicleState);
 
     // NEW: Business-Logik - wenn ACC von Fault auf wieder "operabel" wechselt,
-    //      erzwingen wir ACC OFF, unabhängig vom Button-Zustand.
+    //      erzwingen wir ACC OFF, unabhängig vom Button-Zustand. (Saf-REQ-10)
     if (lastAccState_ == AccState::Fault &&
         vehicleState.accState != AccState::Fault)
     {
@@ -326,12 +361,16 @@ void MainWindow::onSimTick()
     // aktuellen Zustand für nächsten Tick merken
     lastAccState_ = vehicleState.accState;
 
+    // Saf-REQ-2 (Plausibilitätsprüfung / Gültigkeit), Saf-REQ-9, REQ-w-no-Saf-Sec-3:
     setDistanceMeters(vehicleState.distanceMeters, !isValidDistance(vehicleState.distanceMeters));
+    // Saf-REQ-9, Saf-REQ-10
     updateAccState(vehicleState.accState);
+    // Saf-REQ-3, Saf-REQ-6, Saf-REQ-9
     updateHealthLed();
 
     if (vehicleState.accState == AccState::On)
     {
+        // Saf-REQ-9, Saf-REQ-11, Saf-REQ-12
         setSpeedKmh(static_cast<std::int32_t>(vehicleState.speedMetersPerHour / 1000U));
     }
 
