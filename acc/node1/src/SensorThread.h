@@ -18,4 +18,6 @@ public:
 private:
     Sensor sensor;
 };    
+bool validRange(double distance);
+bool validDviation(double distance1, double distance2);
 }
