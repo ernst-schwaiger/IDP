@@ -7,16 +7,24 @@
 #include "SensorThread.h"
 #include "Node1Types.h"
 
+constexpr uint16_t SAMPLE_INTERVALL_US = 5'000;
+constexpr uint16_t INVALID_DISTANCE_BELOW = 0;
+constexpr uint16_t INVALID_DISTANCE_ABOVE = 400;
+constexpr uint16_t INVALID_READING = 0xffff;
+
 using namespace std;
 using namespace acc;
 
-bool acc::validRange(double distance)
+uint16_t acc::validRange(double distance)
 {
-    if (distance < 10.0 || distance > 400.0)
+    if (distance < 10.0) 
     {
-    return false;
+    return INVALID_DISTANCE_BELOW;
+    } else if (distance > 400.0)
+    {
+    return INVALID_DISTANCE_ABOVE;
     }
-    else return true;
+    else return 1;
 }
 
 bool acc::validDviation(double distance1, double distance2)
@@ -31,20 +39,20 @@ void acc::SensorThread::run(void)
 {
     Sensor sensor1(18, 24);
     Sensor sensor2(17, 23);
-    usleep(50'000U);
+    usleep(SAMPLE_INTERVALL_US);
     double startupd1 = sensor1.getDistanceCm();
 
-    usleep(50'000U);
+    usleep(SAMPLE_INTERVALL_US);
     double startupd2 = sensor2.getDistanceCm();
    
     if(validDviation(startupd1,startupd2))
     {
-        cout << "Abweichung OK\n";
+        //cout << "Abweichung OK\n";
     } else
     {
-        cout << "Abweichung zu groß\n";
+       setCurrentDistanceReading(INVALID_READING);
     }
-    if(validRange(startupd1) && validRange(startupd2))
+    if(validRange(startupd1) == 1 && validRange(startupd2) == 1)
     {
         cout << "Werte Gültig\n";
     } else
@@ -56,13 +64,9 @@ void acc::SensorThread::run(void)
         // Read sensor 1
         // Read sensor 2
         // Do plausibility checks, compare values, determine output
-        
-
-       
-
 
         double d1 = sensor1.getDistanceCm(); // we just assume everything is OK here...
-        
+         cout << d1 <<"cm\n";
         uint16_t nextReadingVal = static_cast<uint16_t>(floor(d1));
        
         if(validRange(d1))
@@ -77,10 +81,11 @@ void acc::SensorThread::run(void)
         
         
         // Sleep 50ms
-        usleep(50'000U);
+        usleep(SAMPLE_INTERVALL_US);
 
         double d2 = sensor2.getDistanceCm(); // we just assume everything is OK here...
         nextReadingVal = static_cast<uint16_t>(floor(d2));
+        cout << d2 <<"cm\n";
         if(validRange(d2))
         {
         // Critical section start, take care that no exception can be thrown in it!
@@ -88,12 +93,17 @@ void acc::SensorThread::run(void)
         }
         else 
         {
+            setCurrentDistanceReading(INVALID_READING);
             //error übergeben
         }
-        usleep(50'000U);
+        usleep(SAMPLE_INTERVALL_US);
         if(validDviation(d1,d2))
         {
-        //setCurrentDistanceReading(0xffff);
+            cout << "valid\n";
+   
+        } else
+        {
+            cout << "invalid\n";
         }
 
     }
