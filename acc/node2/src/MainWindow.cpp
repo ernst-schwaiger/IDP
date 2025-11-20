@@ -7,6 +7,7 @@
 #include <QShortcut>
 #include <QLabel>
 #include <QFont>
+#include <QApplication>
 
 namespace {
 inline std::int32_t clamp(std::int32_t v, std::int32_t lo, std::int32_t hi) { return std::min(hi, std::max(lo, v)); }
@@ -47,7 +48,7 @@ MainWindow::MainWindow(bool &bTerminateApp, QWidget *parent)
 {
     ui->setupUi(this);
 
-    // Schriftgröße Distance/Speed Labels
+    // Font size Distance/Speed Labels
     {
         QFont f1 = ui->label_Speed->font();
         f1.setPointSize(20);
@@ -60,10 +61,10 @@ MainWindow::MainWindow(bool &bTerminateApp, QWidget *parent)
         ui->label_Distance->setFont(f2);
     }
 
-    // --- Rechte Spalte layouten (LED-Zeile sichtbar machen) ---
+    // --- Layout right column (make LED row visible) ---
     setupRightGridLayout();
 
-    // --- LED initial sichtbar/grün & nach vorn ---
+    // --- LED initially visible/green & forward ---
     if (ui->ledACC) {
         ui->ledACC->setFixedSize(48, 48);
         ui->ledACC->setStyleSheet(
@@ -71,11 +72,11 @@ MainWindow::MainWindow(bool &bTerminateApp, QWidget *parent)
         ui->ledACC->raise();
     }
 
-    // --- Startzustände der GUI ---
+    // --- GUI startup states ---
     // Saf-REQ-9, REQ-w-no-Saf-Sec-2, 4
     setSpeedKmh(0);
     // Saf-REQ-9, REQ-w-no-Saf-Sec-3
-    setDistanceMeters(0.0, /*accFailed=*/true); // leer bis Messwert „kommt“
+    setDistanceMeters(0.0, /*accFailed=*/true); // empty until measured value "arrives"
     updateAccState(AccState::Off);
     updateHealthLed();
 
@@ -87,21 +88,21 @@ MainWindow::MainWindow(bool &bTerminateApp, QWidget *parent)
         ui->btnACC->setFont(f);
     }
 
-    // --- Verbindungen zwischen Buttons und Slots ---
-    // REQ-w-no-Saf-Sec-5: ein Button für +Speed, einer für -Speed.
-    // REQ-w-no-Saf-Sec-6: Auto-Repeat ist über .ui-Einstellungen aktiv, hier wird jeder Klick verarbeitet.
+    // --- Connections between buttons and slots ---
+    // REQ-w-no-Saf-Sec-5: one button for +Speed, one for -Speed.
+    // REQ-w-no-Saf-Sec-6: Auto-repeat is enabled via .ui settings, here every click is processed.
     connect(ui->btnACC,       &QPushButton::toggled, this, &MainWindow::onAccToggled);
     connect(ui->btnSpeedUp,   &QPushButton::clicked, this, &MainWindow::onSpeedUp);
     connect(ui->btnSpeedDown, &QPushButton::clicked, this, &MainWindow::onSpeedDown);
     ui->btnACC->setCheckable(true);
 
-    // --- Tastenkürzel zum Schließen (Esc / Ctrl+Q) ---
+    // --- Keyboard shortcut to close (Esc / Ctrl+Q) ---
     auto esc  = new QShortcut(QKeySequence(Qt::Key_Escape), this);
     auto quit = new QShortcut(QKeySequence::Quit, this); // Ctrl+Q
     connect(esc,  &QShortcut::activated, this, &QWidget::close);
     connect(quit, &QShortcut::activated, this, &QWidget::close);
 
-    // --- periodische Aktualisierung der GUI aus dem globalen VehicleState ---
+    // --- Periodic updating of the GUI from the global VehicleState ---
     simTimer_ = new QTimer(this);
     simTimer_->setInterval(50); // 50ms
     connect(simTimer_, &QTimer::timeout, this, &MainWindow::onSimTick);
@@ -110,35 +111,35 @@ MainWindow::MainWindow(bool &bTerminateApp, QWidget *parent)
 
 MainWindow::~MainWindow() { delete ui; }
 
-// Layout der rechten Spalte fixieren (LED sichtbar machen)
+// Fix the layout of the right column (make LED visible)
 // ------------------------------------------------------------------
 
 void MainWindow::setupRightGridLayout() {
-    // Dein rechter Bereich liegt in gridLayout_rechts (Widget: gridLayoutWidget)
+    // right area is located in gridLayout_rechts (Widget: gridLayoutWidget)
     auto right = ui->centralwidget->findChild<QGridLayout*>("gridLayout_rechts");
     if (!right) return;
 
-    // Zeilen: 0=LED, 1/3/5=Linien, 2=ACC, 4=Up, 6=Down
-    right->setRowMinimumHeight(0, 90);  // LED-Zeile bekommt fix Höhe
+    // Rows: 0=LED, 1/3/5=Lines, 2=ACC, 4=Up, 6=Down
+    right->setRowMinimumHeight(0, 90);  // LED strip gets fixed height
     right->setRowStretch(0, 2);
 
-    // Linien sollen keinen Platz ziehen
+    // Lines should not take up space
     right->setRowStretch(1, 0);
     right->setRowStretch(3, 0);
     right->setRowStretch(5, 0);
 
-    // Große Flächen teilen sich den Rest
+    // Large areas share the rest
     right->setRowStretch(2, 3);   // ACC
     right->setRowStretch(4, 3);   // Up
     right->setRowStretch(6, 3);   // Down
 
-    // Etwas kompaktere Abstände
+    // Slightly more compact spacing
     right->setContentsMargins(2, 2, 2, 2);
     right->setHorizontalSpacing(1);
     right->setVerticalSpacing(4);
 }
 
-// Setter-Methoden für Speed, Distance, ACC-Verfügbarkeit, Fault
+// Setter methods for speed, distance, ACC availability, fault
 // ------------------------------------------------------------------
 
 // Saf-REQ-9, REQ-w-no-Saf-Sec-2, 4
@@ -151,7 +152,7 @@ void MainWindow::setSpeedKmh(std::int32_t kmh) {
 // Saf-REQ-9, REQ-w-no-Saf-Sec-3
 void MainWindow::setDistanceMeters(double m, bool accFailed) {
     if (accFailed) {
-        ui->labelDistanzNummer->setText("");  // nichts anzeigen
+        ui->labelDistanzNummer->setText("");  // show nothing
         return;
     }
     ui->labelDistanzNummer->setText(QString::number(m, 'f', 2));
@@ -163,12 +164,12 @@ void MainWindow::setAccAvailable(bool ok) {
     VehicleStateInfoType vehicleState;
     getCurrentVehicleState(&vehicleState);
 
-    // Kommunikations-/Sensorproblem -> ACC aus, Fahrer wird gewarnt.
-    // (Saf-REQ-6, Saf-REQ-7, Saf-REQ-10 - in Kombination mit globalem State)
+    // Communication/sensor problem -> ACC off, driver is warned.
+    // (Saf-REQ-6, Saf-REQ-7, Saf-REQ-10 - in combination with global state)
     if (!ok) { updateAccState(AccState::Off); }
     else
     {
-        // Verfügbarkeit wieder hergestellt --> Anzeige an globalen Zustand anpassen
+        // Availability restored --> Adjust display to global status
         // Saf-REQ-9
         updateAccState(vehicleState.accState);
     }
@@ -179,17 +180,17 @@ void MainWindow::setAccAvailable(bool ok) {
 // Saf-REQ-3, Saf-REQ-6, Saf-REQ-9, Saf-REQ-10
 void MainWindow::setFault(bool faultOn) {
     
-    // faultOn signalisiert, dass ein Fehler aufgetreten bzw. behoben wurde.
-    // Der eigentliche ACC-Zustand liegt aber im globalen VehicleState.
+    // faultOn signals that an error has occurred or been corrected.
+    // However, the actual ACC status is located in the global VehicleState.
     VehicleStateInfoType vehicleState;
     getCurrentVehicleState(&vehicleState);
 
     if (faultOn) {
-        // Fault --> Anzeige rot, ACC nicht bedienbar. (Saf-REQ-3, 6, 7, 10)
+        // Fault --> Red indicator LED, ACC not operable. (Saf-REQ-3, 6, 7, 10)
         updateAccState(AccState::Fault);
     } 
     else {
-        // Fault behoben --> Anzeige zurück auf aktuellen ACC-Zustand.
+        // Fault Fixed --> Display back to current ACC status.
         updateAccState(vehicleState.accState);
     }
     updateHealthLed();
@@ -207,7 +208,7 @@ void MainWindow::onAccToggled(bool)
 
     if (vehicleState.accState == AccState::Fault)
     {
-        // Saf-REQ-10: Aktivierung verhindern, wenn ACC in Fault ist.
+        // Saf-REQ-10: Prevent activation when ACC is in fault mode.
         ui->btnACC->blockSignals(true);
         ui->btnACC->setChecked(false);
         ui->btnACC->blockSignals(false);
@@ -218,7 +219,7 @@ void MainWindow::onAccToggled(bool)
         newAccState = (vehicleState.accState == AccState::Off) ? AccState::On : AccState::Off; 
     }
 
-    // Saf-REQ-11: Beim Einschalten ACC-Set-Speed speichern
+    // Saf-REQ-11: Save ACC set speed when switching on
     uint32_t newMax = (newAccState == AccState::On) ? vehicleState.speedMetersPerHour : 0U;
 
     // Update GUI (Saf-REQ-9)
@@ -281,7 +282,7 @@ void MainWindow::onSpeedDown()
     setCurrentVehicleState(pAccState, &vehicleState.speedMetersPerHour, nullptr);
 }
 
-// Darstellung von ACC-Status, LED, Speed-Farbe, Alarm
+// Display of ACC status, LED, speed color
 // ------------------------------------------------------------------
 
 // Saf-REQ-9, Saf-REQ-10
@@ -305,7 +306,7 @@ void MainWindow::updateAccState(AccState s) {
         break;
     }
         
-    // Saf-REQ-10: Button nur bedienbar, wenn kein Fault anliegt.
+    // Saf-REQ-10: Button can only be operated if there is no fault.
     ui->btnACC->setEnabled(s != AccState::Fault);
     
 }
@@ -317,8 +318,7 @@ void MainWindow::updateHealthLed() {
     VehicleStateInfoType vehicleState;
     getCurrentVehicleState(&vehicleState);
 
-    // "Fehler" liegt vor, wenn entweder ein allgemeiner Fault (fault_)
-    // oder ein ACC-Fault (accState == Fault) aktiv ist.
+    // Error state is represented by global VehicleState.accState == Fault.
     const bool anyFault = (vehicleState.accState == AccState::Fault);
 
     const char* base = "border:2px solid #444; border-radius:24px;";
@@ -327,41 +327,40 @@ void MainWindow::updateHealthLed() {
 }
 
 void MainWindow::updateSpeedStyle(std::int32_t kmh) {
-    // 0..70 grün, 71..130 gelb, >130 rot (nur Beispiel)
+    // 0..70 green, 71..130 yellow, >130 red
     QString base = "background: black; color:%1;";
     QString col  = (kmh <= 70) ? "#32CD32" : (kmh <= 130) ? "#ffd166" : "#ff3b30";
     ui->lcdNumberSpeed->setStyleSheet(base.arg(col));
 }
 
 // Saf-REQ-1, 2, 3, 4, 6, 9, 10, 11, 12
-// aktualisiert die GUI
+// updates the GUI
 void MainWindow::onSimTick() 
 {
     VehicleStateInfoType vehicleState;
     getCurrentVehicleState(&vehicleState);
 
-    // NEW: Business-Logik - wenn ACC von Fault auf wieder "operabel" wechselt,
-    //      erzwingen wir ACC OFF, unabhängig vom Button-Zustand. (Saf-REQ-10)
+    // Business logic - when ACC changes from Fault to "operable" again, we force ACC OFF, regardless of the button status. (Saf-REQ-10)
     if (lastAccState_ == AccState::Fault &&
         vehicleState.accState != AccState::Fault)
     {
-        // globaler Zustand auf OFF
+        // global status set to OFF
         AccState offState = AccState::Off;
         vehicleState.accState = AccState::Off;
 
-        // Button sicher auf "nicht gedrückt" setzen, ohne Signal auszulösen
+        // Set button to "not pressed" without triggering a signal
         ui->btnACC->blockSignals(true);
         ui->btnACC->setChecked(false);
         ui->btnACC->blockSignals(false);
 
-        // nur den ACC-Zustand ins globale VehicleState zurückschreiben
+        // Only write the ACC status back to the global VehicleState.
         setCurrentVehicleState(&offState, nullptr, nullptr);
     }
 
-    // aktuellen Zustand für nächsten Tick merken
+    // Remember current state for next tick
     lastAccState_ = vehicleState.accState;
 
-    // Saf-REQ-2 (Plausibilitätsprüfung / Gültigkeit), Saf-REQ-9, REQ-w-no-Saf-Sec-3:
+    // Saf-REQ-2 (Plausibility check), Saf-REQ-9, REQ-w-no-Saf-Sec-3:
     setDistanceMeters(vehicleState.distanceMeters, !isValidDistance(vehicleState.distanceMeters));
     // Saf-REQ-9, Saf-REQ-10
     updateAccState(vehicleState.accState);

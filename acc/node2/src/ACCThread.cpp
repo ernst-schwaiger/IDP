@@ -19,7 +19,7 @@ using namespace acc;
 namespace
 {
     // Saf-REQ-12: 30 km/h in m/h
-    constexpr uint32_t ACC_MIN_SPEED_METERS_PER_HOUR = 30000U; // NEW: Mindestgeschwindigkeit für ACC
+    constexpr uint32_t ACC_MIN_SPEED_METERS_PER_HOUR = 30000U; // Minimum speed for ACC
 }
 
 void acc::ACCThread::run(void)
@@ -32,7 +32,7 @@ void acc::ACCThread::run(void)
         bool updateAccState = false;
 
         // Saf-REQ-12:
-        // NEW: ACC automatisch ausschalten, wenn Speed < 30 km/h
+        // Automatically switch off ACC when speed < 30 km/h
         if ((currentVehicleState.accState == AccState::On) &&
             (currentVehicleState.speedMetersPerHour < ACC_MIN_SPEED_METERS_PER_HOUR))
         {
@@ -93,8 +93,8 @@ void acc::ACCThread::run(void)
             pSpeedMetersPerHour = &currentVehicleState.speedMetersPerHour;
         }
 
-        // Write back new Global Vehicle State (accSetSpeed wird von GUI gesetzt)
-        // (accSetSpeed wird von der GUI beim Aktivieren gesetzt - Saf-REQ-11)
+        // Write back new Global Vehicle State (accSetSpeed is set by GUI)
+        // (accSetSpeed is set by the GUI when activated - Saf-REQ-11)
         setCurrentVehicleState(pAccState, pSpeedMetersPerHour, pDistanceMeters);
 
         // Sleep 50ms (Saf-REQ-1)
@@ -105,8 +105,7 @@ void acc::ACCThread::run(void)
 // Saf-REQ-11, Saf-REQ-13
 uint32_t acc::ACCThread::accFunc(uint16_t currentDistance, uint32_t currentSpeedMetersPerHour, uint32_t maxAllowedSpeedMetersPerHour)
 {
-    // FIXME: Also take the set speed of the ACC into account here!
-    // "Halber Tacho" (Saf-REQ-13)
+    // "Half speedometer" (Saf-REQ-13)
     uint32_t targetSpeedMetersPerHour = std::min<uint32_t>(currentDistance / 2U, VEHICLE_SPEED_MAX) * 1000U;
 
     // Don't allow the vehice to increase speed beyond the speed when acc has been turned on

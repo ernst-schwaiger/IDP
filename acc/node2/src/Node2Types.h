@@ -19,7 +19,7 @@ typedef struct
     AccState accState;
     uint16_t distanceMeters;
     uint32_t speedMetersPerHour;
-    // NEW: Maximalgeschwindigkeit, die beim Einschalten des ACC gespeichert wird
+    // Maximum speed stored when ACC is switched on
     uint32_t accSetSpeedMetersPerHour; 
 } VehicleStateInfoType;
 
@@ -40,7 +40,7 @@ constexpr uint8_t VEHICLE_SPEED_MAX = 200U;
 
 // APIs for MainWindow
 void getCurrentVehicleState(VehicleStateInfoType *pVehicleState);
-// NEW: 4. Parameter zum Setzen von accSetSpeedMetersPerHour
+// Parameters for setting accSetSpeedMetersPerHour
 void setCurrentVehicleState(AccState const *pACCState, uint32_t const *pSpeedMetersPerHour, uint16_t const *pDistanceMeters, uint32_t const *pAccSetSpeedMetersPerHour = nullptr);
 [[ nodiscard ]] bool isValidDistance(uint16_t currentReading);
 

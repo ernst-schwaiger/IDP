@@ -51,22 +51,21 @@ private slots:
     void onSpeedUp();
     // Saf-REQ-11, REQ-w-no-Saf-Sec-5, -6, -7
     void onSpeedDown();
-    void onSimTick();                // periodische Aktualisierung der GUI
-
+    void onSimTick();                // periodic updating of the GUI
 private:
 
-    void setupRightGridLayout();     // Zeilen/Spalten für gridLayout_rechts setzen
+    void setupRightGridLayout();     // Set rows/columns for gridLayout_right
     // Saf-REQ-9, Saf-REQ-10
-    void updateAccState(acc::AccState s); // Button-Text/Farbe/Enable
+    void updateAccState(acc::AccState s);
     // Saf-REQ-3, Saf-REQ-6, Saf-REQ-9
-    void updateHealthLed();          // LED rot/grün je nach fault_
-    void updateSpeedStyle(std::int32_t kmh);  // Farbe der LCD-Anzeige
+    void updateHealthLed();          // LED red/green based on global VehicleState.accState
+    void updateSpeedStyle(std::int32_t kmh);  // Color of the LCD display
 
     Ui::MainWindow *ui;
     bool &bTerminateApp_;
 
     QTimer* simTimer_;
 
-    // NEW: letzter bekannter ACC-Zustand
+    // last known ACC status
     acc::AccState lastAccState_;
 };
