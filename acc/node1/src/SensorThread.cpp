@@ -38,35 +38,40 @@ bool acc::validDviation(double distance1, double distance2)
 
 void acc::SensorThread::run(void)
 {
+    // check the valisity of the sensor readings at start up
+    // TODO loop for the check
     Sensor sensor1(18, 24);
     Sensor sensor2(17, 23);
+    
+
     usleep(SAMPLE_INTERVALL_US);
     double startupd1 = sensor1.getDistanceCm();
 
     usleep(SAMPLE_INTERVALL_US);
     double startupd2 = sensor2.getDistanceCm();
-   
+    // check deviation between sensor 1 and 2
+    // if deviation is to high, the range is not regarded
     if(validDviation(startupd1,startupd2))
     {
         cout << "Deviation OK\n";
+        if(validRange(startupd1) == 1 && validRange(startupd2) == 1)
+        {
+        // just for demonstration
+        // TODO rework the if clause logic here
+        cout << "Reading valid\n";
+        } else
+        {
+        setCurrentDistanceReading(INVALID_READING);
+        cout << "Reading invalid\n";
+        }
     } else
     {
        cout << "Deviation NOK\n";
        setCurrentDistanceReading(INVALID_READING);
     }
-    if(validRange(startupd1) == 1 && validRange(startupd2) == 1)
-    {
-        cout << "Reading valid\n";
-    } else
-    {
-        cout << "Reading invalid\n";
-    }
+    // TODO exit thread if Sesnor readings invalid
     while (!terminateApp())
     {
-        // Read sensor 1
-        // Read sensor 2
-        // Do plausibility checks, compare values, determine output
-
         double d1 = sensor1.getDistanceCm(); // we just assume everything is OK here...
         cout << d1 <<"cm\n";
         uint16_t nextReadingVal = static_cast<uint16_t>(floor(d1));
@@ -81,15 +86,15 @@ void acc::SensorThread::run(void)
         {
         cout << "Deviation OK\n";
         // if deviation is ok, check plausibility of reading
-        if(validRange(startupd1) == 1 && validRange(startupd2) == 1)
-        {
-        cout << "Reading valid\n";
-        setCurrentDistanceReading(nextReadingVal);
-        } else
-        {
-        cout << "Reading invalid\n";
-        setCurrentDistanceReading(INVALID_READING);
-        }
+            if(validRange(startupd1) == 1 && validRange(startupd2) == 1)
+            {
+            cout << "Reading valid\n";
+            setCurrentDistanceReading(nextReadingVal);
+            } else 
+            {
+            cout << "Reading invalid\n";
+            setCurrentDistanceReading(INVALID_READING);
+            }
         } else
         {
         cout << "Deviation NOK\n";
