@@ -8,6 +8,8 @@
 // comment this out if no sensort are mounted to node 1
 #define PROXIMITY_SENSORS_MOUNTED
 
+constexpr uint32_t TIMEOUT_US = 30000; // 30 ms Timeout 
+
 #ifdef PROXIMITY_SENSORS_MOUNTED
 #include <pigpio.h>
 #else
@@ -45,17 +47,30 @@ Sensor::~Sensor(void)
 double Sensor::getDistanceCm(void) 
 {
 #ifdef PROXIMITY_SENSORS_MOUNTED
+    
     gpioWrite(trigPin, 1U);
     gpioDelay(10U);
     gpioWrite(trigPin, 0U);
 
-    while (gpioRead(echoPin) == 0) {}
+    // wait for scho high
+    uint32_t t0 = gpioTick();
+    while (gpioRead(echoPin) == 0) {
+        if (gpioTick() - t0 > TIMEOUT_US) {
+            return -1.0;  // Timeout no Echo start
+        }
+    }
     uint32_t start = gpioTick();
 
-    while (gpioRead(echoPin) == 1) {}
+    // wait for echo low
+    t0 = gpioTick();
+    while (gpioRead(echoPin) == 1) {
+        if (gpioTick() - t0 > TIMEOUT_US) {
+            return -2.0;  // Timeout no Echo end
+        }
+    }
     uint32_t end = gpioTick();
 
-    uint32_t diff = end - start; 
+    uint32_t diff = end - start;
     return (diff * 0.0343) / 2.0; 
 #else
     // No sensor available, send test values
