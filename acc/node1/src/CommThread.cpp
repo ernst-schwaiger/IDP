@@ -10,17 +10,18 @@
 using namespace std;
 using namespace acc;
 
+// Execute communication thread function
 void acc::CommThread::run(void)
 {
-    while (!terminateApp())
+    while (!terminateApp()) // while the app is not terminating...
     {
         try
         {
-            commLoop(m_listenSocket);
+            commLoop(m_listenSocket); //...execute the comm op loop
         }
         catch(BTRuntimeError const &e)
         {
-            // Connection reset is handled gracefully
+            // Connection reset happened in the loop, is handled gracefully here
             if (ECONNRESET == e.errNumber())
             {
                 cout << "Connection to client lost. Setting up new connection.\n";
@@ -33,13 +34,16 @@ void acc::CommThread::run(void)
     }
 }
 
+// communication loop (tx side)
 void acc::CommThread::commLoop(acc::BTListenSocket &listenSocket)
 {
-    uint32_t numTxFails = 0U;
-    uint32_t numTxSuccess = 0U;
+    uint32_t numTxFails = 0U; // keep track of the number of failed tx operations
+    uint32_t numTxSuccess = 0U; // keep track of the number of successful tx operations
+
+    // Set up bluetooth connection
     acc::BTConnection conn(&listenSocket);
     
-    // Set up session key
+    // Set up session key/key exchange phase
     bool keyExChangeFinished = false;
     while (!terminateApp() && !keyExChangeFinished)
     {
@@ -51,15 +55,17 @@ void acc::CommThread::commLoop(acc::BTListenSocket &listenSocket)
         cout << "Connection to client established.\n";
     }
 
+    // timestamp value [ms] starts after a successfuly connection was established
     uint64_t baselineMs = getTimestampMs();
 
     while (!terminateApp()) // we leave this one only via failed send/receive operations
     {
+        // get distance reading
         uint16_t currentDistanceReading = getCurrentDistanceReading();
         uint8_t readingToTransmit[sizeof(currentDistanceReading)];
         readingToTransmit[0] = currentDistanceReading >> 8;
         readingToTransmit[1] = currentDistanceReading & 0xff;
-
+        // send distance reading with counter and HMAC
         if (conn.sendWithCounterAndMAC(0x02, {readingToTransmit, sizeof(readingToTransmit)}, getTimestampMsSinceBaseline(baselineMs)) < 0)
         {
             numTxFails++;

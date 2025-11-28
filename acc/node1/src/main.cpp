@@ -13,13 +13,15 @@
 using namespace std;
 using namespace acc;
 
+
+// type for passing distance reading between sensor thread and comm thread, including lock
 typedef struct
 {
     uint16_t distance;
     pthread_mutex_t lock;
 } DistanceReadingType;
 
-static constexpr uint16_t DISTANCE_READING_ERROR_2 = 65535U;
+static constexpr uint16_t DISTANCE_READING_ERROR_2 = 65535U; // error code for invalid distance reading
 
 // global var, written by the sensor thread, read by the communication thread
 static DistanceReadingType gCurrentDistanceReading = { DISTANCE_READING_ERROR_2, PTHREAD_MUTEX_INITIALIZER };
@@ -30,6 +32,7 @@ static bool gTerminateApplication = false;
 namespace acc
 {
 
+// get the most recent distance reading, lock avoids data race conditions
 uint16_t getCurrentDistanceReading()
 {
     pthread_mutex_lock(&gCurrentDistanceReading.lock);
@@ -37,7 +40,7 @@ uint16_t getCurrentDistanceReading()
     pthread_mutex_unlock(&gCurrentDistanceReading.lock);
     return currentReading;
 }
-
+// set the distance reading, lock avoids data race conditions
 void setCurrentDistanceReading(uint16_t value)
 {
     pthread_mutex_lock(&gCurrentDistanceReading.lock);
@@ -52,6 +55,7 @@ static void sigint_handler(int)
     gTerminateApplication = true;
 }
 
+// sensor thread function, will exit once the terminate app flag is set
 static void *sensorThreadFunc(void *)
 {
     try
@@ -101,6 +105,7 @@ int main()
         {
             optSensorThreadHandle = sensorThreadHandle;
             // ...this leaves the Communication Thread :)
+            // which will exit the terminate app flag is set
             acc::CommThread commThread(gTerminateApplication);
             commThread.run();
         }
@@ -117,7 +122,7 @@ int main()
         ret = -1;
     }
 
-    // signal all threads to stop
+    // signal the other threads to stop
     gTerminateApplication = true;
     cout << "Shutting down node1...\n";
 

@@ -8,16 +8,20 @@
 
 namespace acc
 {
-
+// Communication thread on node 1/server sode
+// Implements Saf-REQ-5, Saf-REQ-8
 class CommThread : public ThreadWrapper<void>
 {
 public:
+    // Initialize communication thread
     explicit CommThread(bool &terminateApp) : ThreadWrapper(terminateApp, nullptr), m_listenSocket() {}
+    // Cleanup communication thread
     virtual ~CommThread(void) override {}
+    // Execute communication thread function
     virtual void run(void) override;
 
 private:
-    void commLoop(acc::BTListenSocket &listenSocket);
-    acc::BTListenSocket m_listenSocket;
+    void commLoop(acc::BTListenSocket &listenSocket); // communication loop (tx side)
+    acc::BTListenSocket m_listenSocket; // bluetooth socket for sending
 };    
 }
