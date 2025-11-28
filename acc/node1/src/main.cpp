@@ -3,6 +3,9 @@
 #include <cmath>
 #include <optional>
 
+#include <signal.h>
+#include <unistd.h>
+
 #include "Node1Types.h"
 #include "CommThread.h"
 #include "SensorThread.h"
@@ -42,6 +45,13 @@ void setCurrentDistanceReading(uint16_t value)
     pthread_mutex_unlock(&gCurrentDistanceReading.lock);
 }
 
+// Invoked when process gets SIGINT / Ctrl-C
+static void sigint_handler(int)
+{
+    // this global flag signals threads of the process to stop gracefully
+    gTerminateApplication = true;
+}
+
 static void *sensorThreadFunc(void *)
 {
     try
@@ -73,6 +83,9 @@ int main()
     optional<pthread_t> optSensorThreadHandle;
 
     cout << "Node 1 started.\n";
+
+    // Handle SIGINT/Ctrl-C gracefully
+    signal(SIGINT, sigint_handler);
 
     try
     {

@@ -10,6 +10,7 @@ using namespace std;
 namespace acc
 {
 
+// Set up BT listen socket
 BTListenSocket::BTListenSocket(void) : 
     m_local_addr{ AF_BLUETOOTH, htobs(0x1001), { 0 }, 0, 0 }
 {
@@ -18,11 +19,13 @@ BTListenSocket::BTListenSocket(void) :
 
     if (m_listenSocket < 0)
     {
+        //Saf-REQ-8: If a failure of the communication subsystem (Bluetooth) is detected, the ACC shall initiate a connection. 
         throw BTRuntimeError("failed to create listen socket");
     }
 
     if (::bind(m_listenSocket, reinterpret_cast<struct sockaddr *>(&m_local_addr), sizeof(m_local_addr)) < 0)
     {
+        //Saf-REQ-8: If a failure of the communication subsystem (Bluetooth) is detected, the ACC shall initiate a connection. 
         throw BTRuntimeError("failed to bind to listen socket");
     }
 
@@ -43,6 +46,7 @@ void BTListenSocket::makeBTDeviceVisible(void)
 
     if (error != nullptr)
     {
+        //Saf-REQ-8: If a failure of the communication subsystem (Bluetooth) is detected, the ACC shall initiate a connection. 
         throw BTRuntimeError(error->message);
     }
 
@@ -58,6 +62,7 @@ void BTListenSocket::makeBTDeviceVisible(void)
 
     if (error != nullptr)
     {
+        //Saf-REQ-8: If a failure of the communication subsystem (Bluetooth) is detected, the ACC shall initiate a connection. 
         throw BTRuntimeError(error->message);
     }
 
@@ -83,6 +88,7 @@ void BTListenSocket::makeBTDeviceVisible(void)
 
     if (error != nullptr)
     {
+        //Saf-REQ-8: If a failure of the communication subsystem (Bluetooth) is detected, the ACC shall initiate a connection. 
         throw BTRuntimeError(error->message);
     }
 }

@@ -6,6 +6,7 @@
 namespace acc
 {
 
+// gets current timestamp in units of milliseconds
 uint64_t getTimestampMs(void)
 {
     struct timespec ts;
@@ -15,10 +16,11 @@ uint64_t getTimestampMs(void)
     return ms;
 }
 
+// gets elapsed milliseconds since a time baseline
 uint32_t getTimestampMsSinceBaseline(uint64_t baselineMs)
 {
     uint64_t currentTimeMs = getTimestampMs();
-    assert(currentTimeMs >= baselineMs);
+    assert(currentTimeMs >= baselineMs); // someone turned the clock back -> terminate!
     return static_cast<uint32_t>(currentTimeMs - baselineMs);
 }
 

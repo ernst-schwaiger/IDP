@@ -1,10 +1,15 @@
 #include <Helper.h>
-
+#include <unistd.h>
 #include <catch2/catch_test_macros.hpp>
 
 using namespace std;
 
-TEST_CASE( "generation of session key works", "crypto" )
+static constexpr uint16_t ELAPSED_MS = 10;
+
+TEST_CASE( "timestamp creation works", "helper" )
 {
-    REQUIRE( 42U == 42U );
+    uint64_t baseline  = acc::getTimestampMs();
+    usleep(ELAPSED_MS * 1000);
+    uint32_t elapsedMS = acc::getTimestampMsSinceBaseline(baseline);
+    REQUIRE(elapsedMS >= ELAPSED_MS); // we should get the elapsed ms here
 }
