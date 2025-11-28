@@ -14,14 +14,21 @@ using namespace acc;
 void acc::CommThread::run(void)
 {
     uint32_t connectErrorCounter = 0U;
-    while (!terminateApp())
+    while (!terminateApp()) // while the app is not terminating...
     {
         try
         {
-            commLoop(m_pthreadArg);
+            commLoop(m_pthreadArg); //...execute the comm op loop
         }
         catch(BTRuntimeError const &e)
         {
+            //Saf-REQ-5: The ACC shall automatically detect a failure of the communication subsystem 
+            // (Bluetooth) by recognizing that a packet could not be sent, or by recognizing that no 
+            // response is received within a defined period (500 ms) after a successful transmission.             
+            // Connection reset happened in the loop, is handled gracefully here
+            //Saf-REQ-8: If a failure of the communication subsystem (Bluetooth) is detected, 
+            // the ACC shall initiate a connection.
+
             // Handle connection refused, reset, unavailable gracefully.
             // We try to connect from start in that case
             if ((ECONNREFUSED == e.errNumber()) || (ECONNRESET == e.errNumber()) || (EAGAIN == e.errNumber()))
@@ -43,6 +50,7 @@ void acc::CommThread::run(void)
 //#define NO_BT_COMM 1
 
 #ifndef NO_BT_COMM
+// communication loop (rx side)
 void acc::CommThread::commLoop(char const *remoteMAC) // Deviation Dir 4.6: type passed via main() function
 {
     // Set up a BT connection to node1
@@ -85,6 +93,8 @@ void acc::CommThread::commLoop(char const *remoteMAC) // Deviation Dir 4.6: type
 
         if (noValidMsgRxCounter > 50U)
         {
+            //Saf-REQ-8: If a failure of the communication subsystem (Bluetooth) is detected, 
+            // the ACC shall initiate a connection.            
             throw BTRuntimeError("Connection closed by server");
         }
 

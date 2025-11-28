@@ -8,7 +8,7 @@
 
 namespace acc
 {
-// Communication thread on node 1/server sode
+// Communication thread on node 1/server node
 // Implements Saf-REQ-5, Saf-REQ-8
 class CommThread : public ThreadWrapper<void>
 {

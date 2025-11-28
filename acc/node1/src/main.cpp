@@ -14,7 +14,7 @@ using namespace std;
 using namespace acc;
 
 
-// type for passing distance reading between sensor thread and comm thread, including lock
+// struct for passing distance reading between sensor thread and comm thread, including lock
 typedef struct
 {
     uint16_t distance;
