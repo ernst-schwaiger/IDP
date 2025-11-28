@@ -147,17 +147,18 @@ See also:
 
 ## TODOs
 
-- Implement storage of maximum speed acc speed once ACC is turned on. (Lorenzo)
-- Implement turning off ACC if speed gets below 30 kmH (Lorenzo)
-- Business logic in GUI: If acc switches from failed to operable state, the state shall be always ("off") (instead of the state of the acc button). (Lorenzo)
-- ACC Status Lamp stays green, even if no recent distance readings are available (ACC Button, however works properly for that case) (Lorenzo)
-- move initializers of members into MainWindow constructor. (Lorenzo)
-- Remove obsolete state variables in MainWindow (all state is now kept in global variable, protected with a lock) (Lorenzo)
+- Replace "German" comments, variable/function names, ...
+- 
 - Create services that autostart node 1 and node 2 apps. (Ask whether this is required)
 - Clarify WLAN router issue in lab (Stefan)
 - Add requirement references to production code/MISRA 7.3 Requirements traceability  (All)
-- Replace char/short/int/long types by uintxyz_t wherever possible/MISRA Dir 4.6 typedefs that indicate size and signedness should be used in place of the basic numerical types (MainWindow.cpp|.h only, Lorenzo)
 - Remove test switches in CommThread of node2 and Sensor.cpp (No dead code!)
+- Stefan: free functions in SensorThread.cpp/.h?:
+uint16_t validRange(double distance);
+bool validDviation(double distance1, double distance2); why?
+- Stefan: Add comments for SensorThread and Sensor classes (English)
+- Re-run CPPcheck, look for issues
+
 
 ```
 // Safety related requirements: 
