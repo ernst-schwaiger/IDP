@@ -21,7 +21,12 @@ void acc::CommThread::run(void)
         }
         catch(BTRuntimeError const &e)
         {
+            //Saf-REQ-5: The ACC shall automatically detect a failure of the communication subsystem 
+            // (Bluetooth) by recognizing that a packet could not be sent, or by recognizing that no 
+            // response is received within a defined period (500 ms) after a successful transmission.             
             // Connection reset happened in the loop, is handled gracefully here
+            //Saf-REQ-8: If a failure of the communication subsystem (Bluetooth) is detected, 
+            // the ACC shall initiate a connection.
             if (ECONNRESET == e.errNumber())
             {
                 cout << "Connection to client lost. Setting up new connection.\n";
