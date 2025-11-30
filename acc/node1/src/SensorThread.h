@@ -18,6 +18,6 @@ public:
 private:
     Sensor sensor;
 };    
-uint16_t validRange(double distance);
-bool validDviation(double distance1, double distance2);
+uint16_t validRange(uint16_t distance);
+bool validDviation(uint16_t distance1, uint16_t distance2);
 }

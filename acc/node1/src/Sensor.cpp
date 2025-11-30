@@ -1,5 +1,5 @@
 #include "Sensor.h"
-
+#include <cmath>
 #include <unistd.h>
 #include <iostream>
 #include <stdexcept>
@@ -9,6 +9,7 @@
 #define PROXIMITY_SENSORS_MOUNTED
 
 constexpr uint32_t TIMEOUT_US = 30000; // 30 ms Timeout 
+constexpr uint16_t TIMEOUT = 0xffff;
 
 #ifdef PROXIMITY_SENSORS_MOUNTED
 #include <pigpio.h>
@@ -44,7 +45,7 @@ Sensor::~Sensor(void)
 #endif
 }
 
-double Sensor::getDistanceCm(void) 
+uint16_t Sensor::getDistanceCm(void) 
 {
 #ifdef PROXIMITY_SENSORS_MOUNTED
     
@@ -56,7 +57,7 @@ double Sensor::getDistanceCm(void)
     uint32_t t0 = gpioTick();
     while (gpioRead(echoPin) == 0) {
         if (gpioTick() - t0 > TIMEOUT_US) {
-            return -1.0;  // Timeout no Echo start
+            return TIMEOUT;  // Timeout no Echo start
         }
     }
     uint32_t start = gpioTick();
@@ -65,13 +66,13 @@ double Sensor::getDistanceCm(void)
     t0 = gpioTick();
     while (gpioRead(echoPin) == 1) {
         if (gpioTick() - t0 > TIMEOUT_US) {
-            return -2.0;  // Timeout no Echo end
+            return TIMEOUT;  // Timeout no Echo end
         }
     }
     uint32_t end = gpioTick();
 
     uint32_t diff = end - start;
-    return (diff * 0.0343) / 2.0; 
+    return static_cast<uint16_t>(floor((diff * 0.0343) / 2.0)); 
 #else
     // No sensor available, send test values
     static double i = 0.0;
