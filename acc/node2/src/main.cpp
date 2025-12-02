@@ -10,13 +10,14 @@
 using namespace std;
 using namespace acc;
 
+// struct for passing vehicle info between acc thread, comm thread, GUI thread, including lock
 typedef struct
 {
     VehicleStateInfoType info;
     pthread_mutex_t lock;
 } VehicleStateType;
 
-// constants
+// error codes for invalid distance readings
 static constexpr uint16_t DISTANCE_READING_ERROR_1 = 65534U;
 static constexpr uint16_t DISTANCE_READING_ERROR_2 = 65535U;
 
@@ -31,6 +32,7 @@ static bool gTerminateApplication = false;
 
 namespace acc
 {
+// get the most recently received distance reading, lock avoids data race conditions
 void getCurrentDistanceReading(DistanceReadingInfoType *pReading)
 {
     pthread_mutex_lock(&gCurrentDistanceReading.lock);
@@ -38,7 +40,7 @@ void getCurrentDistanceReading(DistanceReadingInfoType *pReading)
     pReading->timestamp = gCurrentDistanceReading.info.timestamp;
     pthread_mutex_unlock(&gCurrentDistanceReading.lock);
 }
-
+// set the most recently received distance reading, lock avoids data race conditions
 void setCurrentDistanceReading(DistanceReadingInfoType const *pReading)
 {
     pthread_mutex_lock(&gCurrentDistanceReading.lock);
@@ -52,6 +54,7 @@ bool isValidDistance(uint16_t currentReading)
     return ((currentReading != DISTANCE_READING_ERROR_1) && (currentReading != DISTANCE_READING_ERROR_2));
 }
 
+// get the current vehicle state, lock avoids data race conditions
 void getCurrentVehicleState(VehicleStateInfoType *pVehicleState)
 {
     pthread_mutex_lock(&gVehicleState.lock);
@@ -62,6 +65,7 @@ void getCurrentVehicleState(VehicleStateInfoType *pVehicleState)
     pthread_mutex_unlock(&gVehicleState.lock);
 }
 
+// set the current vehicle state, lock avoids data race conditions
 void setCurrentVehicleState(AccState const *pACCState, uint32_t const *pSpeedMetersPerHour, uint16_t const *pDistanceMeters, uint32_t const *pAccSetSpeedMetersPerHour)
 {
     pthread_mutex_lock(&gVehicleState.lock);
@@ -89,6 +93,7 @@ void setCurrentVehicleState(AccState const *pACCState, uint32_t const *pSpeedMet
     pthread_mutex_unlock(&gVehicleState.lock);
 }
 
+// acc thread function, will exit once the terminate app flag is set
 static void *accThreadFunc(void *)
 {
     ACCThread t(gTerminateApplication);
@@ -113,6 +118,7 @@ static void *accThreadFunc(void *)
     return nullptr;
 }
 
+// comm thread function, will exit once the terminate app flag is set
 static void *commThreadFunc(void *arg)
 {
     char *remoteMAC = reinterpret_cast<char *>(arg); // Deviation Dir 4.6: type passed via main() function
@@ -178,7 +184,7 @@ int main(int argc, char *argv[])
             {
                 optAccThreadHandle = tmpThreadHandle;
                 
-                // Init GUI
+                // Init, exec GUI in main thread
                 qputenv("QT_AUTO_SCREEN_SCALE_FACTOR", QByteArray("0"));
                 qputenv("QT_SCALE_FACTOR", QByteArray("1"));
                 QApplication app(argc, argv);
@@ -203,7 +209,7 @@ int main(int argc, char *argv[])
         ret = -1;
     }
 
-    // signal all threads to stop
+    // signal other threads to stop
     gTerminateApplication = true;
     cout << "Shutting down node2...\n";
 

@@ -9,8 +9,10 @@ using namespace std;
 
 namespace acc
 {
-// FIXME: Cleanup, provide a real random bytestream here
 
+// our top-secret pre-shared key, AES's version of the password "123456"
+// in real-world application this key needs proper protection and must not be
+// checked into a source control system
 const array<uint8_t, KEY_LEN_BYTES> CryptoWrapper::PRE_SHARED_KEY = 
 {
     0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
@@ -19,6 +21,7 @@ const array<uint8_t, KEY_LEN_BYTES> CryptoWrapper::PRE_SHARED_KEY =
     0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
 };
 
+// Initialize crypto library, registers required crypto functions, calculates local random number
 CryptoWrapper::CryptoWrapper(void)
 {
     crypt_mp_init("LibTomMath");
@@ -57,6 +60,8 @@ CryptoWrapper::CryptoWrapper(void)
     }    
 }
 
+// create a new session key using own and remote random number
+//Sec-REQ-1: The ACC shall regenerate a new session key after a new Bluetooth connection has been set up. 
 void CryptoWrapper::generateSessionKey(std::span<uint8_t const> remoteRandomNumber)
 {
     // create the common salt: append the larger random number to the smaller one
@@ -82,6 +87,8 @@ void CryptoWrapper::generateSessionKey(std::span<uint8_t const> remoteRandomNumb
     m_optSessionKey = sessionKey;
 }
 
+// generate an HMAC using the passed data and the AES session key, returns 0 on success, other value on failure
+//Sec-REQ-2: The ACC shall protect the integrity of the messages using an HMAC. 
 uint8_t CryptoWrapper::generateHMAC(std::span<uint8_t const> data, std::span<uint8_t> hmac) const
 {
     if (!m_optSessionKey.has_value())
@@ -115,6 +122,8 @@ uint8_t CryptoWrapper::generateHMAC(std::span<uint8_t const> data, std::span<uin
     return 0;
 }
 
+// generate an HMAC using the passed data and the AES session key, returns 0 on success, other value on failure
+//Sec-REQ-2: The ACC shall protect the integrity of the messages using an HMAC. 
 uint8_t CryptoWrapper::verifyHMAC(std::span<uint8_t const> data, std::span<uint8_t const> hmac) const
 {
     array<uint8_t, HMAC_LEN_BYTES> genHMAC;

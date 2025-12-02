@@ -74,11 +74,8 @@ uint16_t Sensor::getDistanceCm(void)
     uint32_t diff = end - start;
     return static_cast<uint16_t>(floor((diff * 0.0343) / 2.0)); 
 #else
-    // No sensor available, send test values
-    static double i = 0.0;
-    double val = fabs(314 * sin(i));
-    i += 0.1;
-    return val;
+    // No sensor available, send Timeout
+    return TIMEOUT;
 #endif
 }
 

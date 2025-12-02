@@ -25,7 +25,7 @@ uint16_t acc::validRange(uint16_t distance)
     {
     return INVALID_DISTANCE_ABOVE;
     }
-    else return 1;
+    else return VALID_RANGE;
 }
 
 bool acc::validDviation(uint16_t distance1, uint16_t distance2)
