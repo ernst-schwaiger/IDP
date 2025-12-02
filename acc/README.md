@@ -152,7 +152,6 @@ See also:
 - Create services that autostart node 1 and node 2 apps. (Ask whether this is required)
 - Clarify WLAN router issue in lab (Stefan)
 - Add requirement references to production code/MISRA 7.3 Requirements traceability  (All)
-- Remove test switches in CommThread of node2 and Sensor.cpp (No dead code!)
 - Stefan: free functions in SensorThread.cpp/.h?:
 uint16_t validRange(double distance);
 bool validDviation(double distance1, double distance2); why?

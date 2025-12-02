@@ -5,17 +5,10 @@
 #include <stdexcept>
 #include <format>
 
-// comment this out if no sensort are mounted to node 1
-#define PROXIMITY_SENSORS_MOUNTED
-
 constexpr uint32_t TIMEOUT_US = 30000; // 30 ms Timeout 
 constexpr uint16_t TIMEOUT = 0xffff;
 
-#ifdef PROXIMITY_SENSORS_MOUNTED
 #include <pigpio.h>
-#else
-#include <cmath>
-#endif
 
 using namespace std;
 
@@ -24,7 +17,6 @@ namespace acc
 
 Sensor::Sensor(uint8_t trigPin, uint8_t echoPin) : trigPin(trigPin), echoPin(echoPin)
 {
-#ifdef PROXIMITY_SENSORS_MOUNTED
     int rc = gpioInitialise(); // Deviation Dir 4.6: type used in external gpio API
     if (rc < 0)
     {
@@ -35,20 +27,15 @@ Sensor::Sensor(uint8_t trigPin, uint8_t echoPin) : trigPin(trigPin), echoPin(ech
     gpioSetMode(echoPin, PI_INPUT);
     gpioWrite(trigPin, 0U);
     usleep(200'000U);
-#endif
 }
 
 Sensor::~Sensor(void)
 {
-#ifdef PROXIMITY_SENSORS_MOUNTED    
     gpioTerminate();
-#endif
 }
 
 uint16_t Sensor::getDistanceCm(void) 
 {
-#ifdef PROXIMITY_SENSORS_MOUNTED
-    
     gpioWrite(trigPin, 1U);
     gpioDelay(10U);
     gpioWrite(trigPin, 0U);
