@@ -8,6 +8,7 @@
 #include "Node1Types.h"
 
 constexpr uint16_t SAMPLE_INTERVALL_US = 5'000;
+constexpr uint16_t MEASURE_MINIMUM = 5;
 constexpr uint16_t INVALID_DISTANCE_BELOW = 0;
 constexpr uint16_t INVALID_DISTANCE_ABOVE = 400;
 constexpr uint16_t INVALID_READING = 0xffff;
@@ -31,7 +32,19 @@ bool acc::SensorThread::validDeviation(double distance1, double distance2)
 
 uint16_t acc::SensorThread::toUint16(double distance)
 {
-    return static_cast<uint16_t>(floor(distance));
+    uint16_t ret = static_cast<uint16_t>(floor(distance));
+
+    if (ret > INVALID_DISTANCE_ABOVE) // we assume distances > 400 as 400
+    {
+        ret = INVALID_DISTANCE_ABOVE;
+    }
+
+    if (ret < MEASURE_MINIMUM) // anything between MEASURE_MINIMUM and 0 is considered 0
+    {
+        ret = INVALID_DISTANCE_BELOW;
+    }
+
+    return ret;
 }
 
 uint16_t acc::SensorThread::doMeasure(Sensor &sensor1, Sensor &sensor2, bool &isReading1Valid, bool &isReading2Valid, bool &isDeviationValid)
@@ -60,8 +73,15 @@ void acc::SensorThread::run(void)
     bool isReading2Valid = false;
     bool isDeviationValid = false;
     uint16_t currentReading = doMeasure(sensor1, sensor2, isReading1Valid, isReading2Valid, isDeviationValid);
+
+    // If we detect an invalid measurement, we bail out
+    if (currentReading == INVALID_READING)
+    {
+        // Log status of initial measurement, if required
+        return;
+    }
+
     setCurrentDistanceReading(currentReading);
-    // Log status of initial measurement, if required
 
     // Measure in a loop
     while (!terminateApp())
