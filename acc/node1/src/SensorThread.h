@@ -16,8 +16,14 @@ public:
     virtual void run(void) override;
 
 private:
+    uint16_t doMeasure(Sensor &sensor1, Sensor &sensor2, bool &isReading1Valid, bool &isReading2Valid, bool &isDeviationValid);
+
+    static bool validRange(double distance);
+    static bool validDeviation(double distance1, double distance2);
+    static uint16_t toUint16(double distance);
+
+
     Sensor sensor;
-};    
-uint16_t validRange(double distance);
-bool validDviation(double distance1, double distance2);
-}
+};
+
+} // namespace acc
