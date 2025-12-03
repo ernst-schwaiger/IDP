@@ -47,7 +47,7 @@ void acc::CommThread::run(void)
 }
 
 // communication loop (rx side)
-void acc::CommThread::commLoop(char const *remoteMAC) // Deviation Dir 4.6: type passed via main() function
+void acc::CommThread::commLoop(char const *remoteMAC) const // Deviation Dir 4.6: type passed via main() function
 {
     // Set up a BT connection to node1
     BTConnection conn(remoteMAC);

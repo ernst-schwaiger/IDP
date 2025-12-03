@@ -1,28 +1,23 @@
 #!/bin/bash
 CPPCHECK=cppcheck
-CPPCHECKOPTS="--addon=misra --check-level=normal --enable=all --inconclusive --safety --checkers-report=report.txt --language=c++ --std=c++20"
-CPPCHECKFOLDERS="libraries node1 node2"
-CPPCHECKEXTENSIONS='-name "*.cpp" -o -name "*.c" -o -name "*.h"'
+# building cppcheck from github does not increase findings.
+#CPPCHECK=${HOME}/projects/cppcheck/build/bin/cppcheck
+CPPCHECKOPTS="--cppcheck-build-dir=cppcheck-build --addon=misra --language=c++ --std=c++20 --enable=all --inconclusive --safety --platform=unix64 --checkers-report=report.txt --suppress=misra-config --suppress=missingIncludeSystem"
+INC_PATH_ARGS="-Inode1/src -Inode2/src -Ilibraries/CryptoComm/include -Ilibraries/Helper/include"
+CPPCHECKFILES="libraries/CryptoComm/src/BTListenSocket.cpp \
+    libraries/CryptoComm/src/BTConnection.cpp \
+    libraries/CryptoComm/src/CryptoWrapper.cpp \
+    libraries/Helper/src/Helper.cpp \
+    node1/src/main.cpp \
+    node1/src/Sensor.cpp \
+    node1/src/CommThread.cpp \
+    node1/src/SensorThread.cpp \
+    node2/src/main.cpp \
+    node2/src/MainWindow.cpp \
+    node2/src/ACCThread.cpp \
+    node2/src/CommThread.cpp"
 
-# Files to check in our project, exclude everything in "test" folders
-CPPCHECKFILES=$(find ${CPPCHECKFOLDERS} -name "*.cpp" | grep -v "/test/") 
-HDRCHECKFILES=$(find ${CPPCHECKFOLDERS} -name "*.h" | grep -v "/test/")
-
-# Folders to find #included header files in
-INCLUDE_PATHS=$(find build ${CPPCHECKFOLDERS} -name "*.h" -o -name "*.hpp" | xargs dirname | sort | uniq)
-INC_PATH_ARGS=""
-for include_path in ${INCLUDE_PATHS}; do
-    INC_PATH_ARGS="${INC_PATH_ARGS} -I${include_path}"
-done
-
-# gcc library paths
-INC_PATHS_GCC=$(gcc --print-search-dirs | grep "libraries" | sed -E "s|[^=]+=(.*)|\1|")
-INC_PATHS_GCC_SPLIT=$(echo $INC_PATHS_GCC | tr ":" "\n")
-for include_path in ${INC_PATHS_GCC_SPLIT}; do
-    INC_PATH_ARGS="${INC_PATH_ARGS} -I${include_path}"
-done
-
-INC_PATH_ARGS="${INC_PATH_ARGS} -I/usr/include/c++/14/algorithm -I/usr/include/c++/14/ext/algorithm -I/usr/include"
+mkdir -p cppcheck-build
 
 #
 # Runs cppcheck including MISRA rules on the acc source code

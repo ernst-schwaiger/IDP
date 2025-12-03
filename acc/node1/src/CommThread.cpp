@@ -40,7 +40,7 @@ void acc::CommThread::run(void)
 }
 
 // communication loop (tx side)
-void acc::CommThread::commLoop(acc::BTListenSocket &listenSocket)
+void acc::CommThread::commLoop(acc::BTListenSocket &listenSocket) const
 {
     uint32_t numTxFails = 0U; // keep track of the number of failed tx operations
     uint32_t numTxSuccess = 0U; // keep track of the number of successful tx operations

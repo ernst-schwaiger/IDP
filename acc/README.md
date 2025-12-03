@@ -148,16 +148,19 @@ See also:
 ## TODOs
 
 - Replace "German" comments, variable/function names, ...
-- 
-- Create services that autostart node 1 and node 2 apps. (Ask whether this is required)
-- Clarify WLAN router issue in lab (Stefan)
-- Add requirement references to production code/MISRA 7.3 Requirements traceability  (All)
-- Stefan: free functions in SensorThread.cpp/.h?:
-uint16_t validRange(double distance);
-bool validDviation(double distance1, double distance2); why?
-- Stefan: Add comments for SensorThread and Sensor classes (English)
-- Re-run CPPcheck, look for issues
-
+- Get unified implementation of SensorThread (Ernst, Stefan)
+- Run checkMISRA.sh, fix warnings which are not false-positives
+- Add requirement references to production code/MISRA 7.3 Requirements traceability  (missing in Sensor and SensorThread, Stefan)
+- Mandatory checks: Manually check code for
+    - verify that traceable requirements are added to the code
+    - avoid usage of basic numerical types, e.g. int, long, instead of uint32_t, uint64_t (Dir 4.6)
+    - all returned error status values are checked (Dir 4.7)
+    - all values passed to functions are checked for validity (or are valid) (Dir 4.11)
+- Scenarios to show in Demo (all)
+    - Sensor values deviate
+    - One sensor fails
+    - Communication fails
+    - Node1 fails
 
 ```
 // Safety related requirements: 

@@ -18,6 +18,6 @@ public:
     virtual void run(void) override;
 
 private:
-    void commLoop(char const *remoteMAC); // communication loop (rx side)
+    void commLoop(char const *remoteMAC) const; // communication loop (rx side)
 };    
 }

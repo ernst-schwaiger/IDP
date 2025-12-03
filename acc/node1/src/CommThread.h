@@ -21,7 +21,7 @@ public:
     virtual void run(void) override;
 
 private:
-    void commLoop(acc::BTListenSocket &listenSocket); // communication loop (tx side)
+    void commLoop(acc::BTListenSocket &listenSocket) const; // communication loop (tx side)
     acc::BTListenSocket m_listenSocket; // bluetooth socket for sending
 };    
 }

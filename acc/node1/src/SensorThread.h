@@ -3,21 +3,21 @@
 #include <ThreadWrapper.h>
 #include "Sensor.h"
 
-static constexpr uint8_t TRIGGER_PIN = 18U;
-static constexpr uint8_t ECHO_PIN = 24U;
-
 namespace acc
 {
 class SensorThread : public ThreadWrapper<void>
 {
 public:
-    explicit SensorThread(bool &terminateApp) : ThreadWrapper(terminateApp, nullptr), sensor(TRIGGER_PIN, ECHO_PIN) {}
+    explicit SensorThread(bool &terminateApp) : ThreadWrapper(terminateApp, nullptr) {}
     virtual ~SensorThread(void) override {}
     virtual void run(void) override;
 
 private:
-    Sensor sensor;
-};    
-uint16_t validRange(uint16_t distance);
-bool validDviation(uint16_t distance1, uint16_t distance2);
-}
+    [[ nodiscard ]] static uint16_t doMeasure(Sensor &sensor1, Sensor &sensor2);
+
+    [[ nodiscard ]] static bool validRange(uint16_t distance);
+    [[ nodiscard ]] static bool validDeviation(uint16_t distance1, uint16_t distance2);
+    [[ nodiscard ]] static uint16_t clamp(uint16_t distance);
+};
+
+} // namespace acc
