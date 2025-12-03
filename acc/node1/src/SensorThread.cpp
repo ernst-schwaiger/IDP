@@ -37,22 +37,6 @@ bool acc::SensorThread::validDeviation(uint16_t distance1, uint16_t distance2)
     return diff < maxAllowed;
 }
 
-//Saf-REQ-2: This function 
-/*uint16_t acc::SensorThread::clamp(uint16_t distance)
-{
-
-    if (distance > INVALID_DISTANCE_ABOVE) // we assume distances > 400 as 400
-    {
-        distance = INVALID_DISTANCE_ABOVE;
-    }
-
-    if (distance < MEASURE_MINIMUM) // anything between MEASURE_MINIMUM and 0 is considered 0
-    {
-        distance = INVALID_DISTANCE_BELOW;
-    }
-
-    return distance;
-}*/
 
 uint16_t acc::SensorThread::doMeasure(Sensor &sensor1, Sensor &sensor2)
 {
