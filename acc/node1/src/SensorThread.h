@@ -14,10 +14,9 @@ public:
 
 private:
     [[ nodiscard ]] static uint16_t doMeasure(Sensor &sensor1, Sensor &sensor2);
-
+    //The following 2 functions implemement Saf-REQ-2
     [[ nodiscard ]] static bool validRange(uint16_t distance);
     [[ nodiscard ]] static bool validDeviation(uint16_t distance1, uint16_t distance2);
-    [[ nodiscard ]] static uint16_t clamp(uint16_t distance);
 };
 
 } // namespace acc

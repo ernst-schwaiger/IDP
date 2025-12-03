@@ -22,11 +22,14 @@ static constexpr uint8_t ECHO_PIN_2 = 23U;
 using namespace std;
 using namespace acc;
 
+//Saf-REQ-2: This function chekcks if the measured range is within certain boundarys. In the implemetation values below 10
+//and above 400 meters
 bool acc::SensorThread::validRange(uint16_t distance)
 {
     return (distance >= 10) && (distance <= 400);
 }
 
+//Saf-REQ-2: This funtion checks if the deviation of the measuremnt between the sensors is greater than 20%
 bool acc::SensorThread::validDeviation(uint16_t distance1, uint16_t distance2)
 {
     uint16_t diff = std::abs(distance1 - distance2);
@@ -34,7 +37,8 @@ bool acc::SensorThread::validDeviation(uint16_t distance1, uint16_t distance2)
     return diff < maxAllowed;
 }
 
-uint16_t acc::SensorThread::clamp(uint16_t distance)
+//Saf-REQ-2: This function 
+/*uint16_t acc::SensorThread::clamp(uint16_t distance)
 {
 
     if (distance > INVALID_DISTANCE_ABOVE) // we assume distances > 400 as 400
@@ -48,7 +52,7 @@ uint16_t acc::SensorThread::clamp(uint16_t distance)
     }
 
     return distance;
-}
+}*/
 
 uint16_t acc::SensorThread::doMeasure(Sensor &sensor1, Sensor &sensor2)
 {
@@ -61,7 +65,7 @@ uint16_t acc::SensorThread::doMeasure(Sensor &sensor1, Sensor &sensor2)
     bool isReading2Valid = validRange(d2);
     bool isDeviationValid = isReading1Valid && isReading2Valid && validDeviation(d1, d2);
     
-    return isDeviationValid ? clamp(min(d1, d2)) : INVALID_READING;
+    return isDeviationValid ? min(d1, d2) : INVALID_READING;
 }
 
 void acc::SensorThread::run(void)
