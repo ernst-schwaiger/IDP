@@ -22,5 +22,4 @@ mkdir -p cppcheck-build
 #
 # Runs cppcheck including MISRA rules on the acc source code
 #
-echo ${CPPCHECK} ${CPPCHECKOPTS} ${INC_PATH_ARGS} ${CPPCHECKFILES} ${HDRCHECKFILES}
 ${CPPCHECK} ${CPPCHECKOPTS} ${INC_PATH_ARGS} ${CPPCHECKFILES} ${HDRCHECKFILES}

@@ -147,9 +147,6 @@ See also:
 
 ## TODOs
 
-- Replace "German" comments, variable/function names, ...
-- Get unified implementation of SensorThread (Ernst, Stefan)
-- Run checkMISRA.sh, fix warnings which are not false-positives
 - Add requirement references to production code/MISRA 7.3 Requirements traceability  (missing in Sensor and SensorThread, Stefan)
 - Mandatory checks: Manually check code for
     - verify that traceable requirements are added to the code

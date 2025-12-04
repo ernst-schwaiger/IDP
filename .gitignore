@@ -22,3 +22,6 @@
 # Ignore build output directory
 build
 debug
+
+# Ignore cppcheck output file
+acc/cppcheck-build

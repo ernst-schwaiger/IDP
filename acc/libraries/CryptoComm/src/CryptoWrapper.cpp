@@ -91,14 +91,16 @@ void CryptoWrapper::generateSessionKey(std::span<uint8_t const> remoteRandomNumb
 //Sec-REQ-2: The ACC shall protect the integrity of the messages using an HMAC. 
 uint8_t CryptoWrapper::generateHMAC(std::span<uint8_t const> data, std::span<uint8_t> hmac) const
 {
-    if (!m_optSessionKey.has_value())
+    std::optional<std::array<uint8_t, KEY_LEN_BYTES>> optSessionKey = getSessionKey();
+
+    if (!optSessionKey.has_value())
     {
         return 1U;
     }
 
     hmac_state hs;
 
-    if (hmac_init(&hs, find_hash("sha256"), begin(*m_optSessionKey), m_optSessionKey->size()) != CRYPT_OK)
+    if (hmac_init(&hs, find_hash("sha256"), begin(*optSessionKey), optSessionKey->size()) != CRYPT_OK)
     {
         return 2U;
     }
