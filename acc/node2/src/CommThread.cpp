@@ -35,7 +35,7 @@ void acc::CommThread::run(void)
             {
                 if ((++connectErrorCounter % 500U) == 0U) // do not clutter stdout
                 {
-                    cout << "Failed to connect to server. Try to reconnect...\n";
+                    cerr << "Failed to connect to server. Try to reconnect...\n";
                 }
             }
             else
@@ -87,7 +87,7 @@ void acc::CommThread::commLoop(char const *remoteMAC) const // Deviation Dir 4.6
             noValidMsgRxCounter++;
         }
 
-        if (noValidMsgRxCounter > 50U)
+        if (noValidMsgRxCounter > 75U)
         {
             //Saf-REQ-8: If a failure of the communication subsystem (Bluetooth) is detected, 
             // the ACC shall initiate a connection.            
