@@ -218,7 +218,31 @@ ISO C90 or ISO C99, a compilation error would have occurred due to the empty ini
 
 #### Dir 3.1 All code shall be traceable to documented requirements 
 
-TBD
+Requirements and where they are documented in the Code:   
+
+GEN-01: this requirement is not relevant for the code
+
+GEN-02: ip-bluetooth.c Row 107 ff 
+GEN-03: ip-bluetooth.h Row 82 ff
+GEN-04: ip-bluetooth.h Row 108 ff
+GEN-05: ip-telegraf.c  Row 9 ff
+
+SAF-01: not found in Code
+SAF-02: not found in Code
+SAF-03: ip-bluetooth.c Row 362 ff
+SAF-04: ip-bluetooth.c Row 429 ff
+SAF-05: ip-bluetooth.c Row 362 ff
+SAF-06: not found in Code
+SAF-07.1: ip-bluetooth.c Row 107 ff
+SAF-07.2: ip-bluetooth.c Row 429 ff
+SAF-08: this requirement is not relevant for the code
+SAF-09: this requirement is not relevant for the code
+
+SEC-01: ip-wolfcrypt.h Row 24
+SEC-02: ip-wolfcrypt.c Row 12
+SEC-03: this requirement is not relevant for the code
+
+
 
 #### Dir 4.1 Run-time failures shall be minimized
 
