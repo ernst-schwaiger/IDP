@@ -250,7 +250,7 @@ GEN-04: ip-bluetooth.h Row 108 ff
 GEN-05: ip-telegraf.c  Row 9 ff     
 
 SAF-01: ESP32-DHT11-vf2.ino Row 112    
-SAF-02: not found in Code    
+SAF-02: ip-bluetooth.c Row 371 ff    
 SAF-03: ip-bluetooth.c Row 362 ff    
 SAF-04: ip-bluetooth.c Row 429 ff    
 SAF-05: ip-bluetooth.c Row 362 ff    
