@@ -13,7 +13,7 @@ Call Stack (most recent call first):
   examples/read_write/CMakeLists.txt:27 (pkg_search_module)
 ```
 
-Since the dependency only included non-essential example subprojects, `cmake -DGATTLIB_BUILD_EXAMPLES=NO ..` can be used to resolve the issue.
+Since the dependency only included non-essential example sub projects, `cmake -DGATTLIB_BUILD_EXAMPLES=NO ..` can be used to resolve the issue.
 Alternatively, `sudo apt install libpcre3-dev` resolves the issue as well. This, however, did only work in Raspbian 12/Bookworm, not in the current Raspbian 13/Trixie. See https://packages.debian.org/search?keywords=libpcre3.
 
 ### Wolfssl
@@ -27,14 +27,14 @@ The initial compilation failed since `ip-telegraf.c` includes `curl/curl.h`, whi
 
 ### Increase Warning Level, add required C Standard
 
-Since the makefile did not add additional warning flags, and no C standard was mandated, the corresponding entries were added to the `CMakeLists.txt`:
+Since the CMakeLists.txt file did not add additional warning flags, and no C standard was mandated, the corresponding entries were added to the `CMakeLists.txt`:
 
 ```
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wpedantic")
 set(CMAKE_C_STANDARD 99)
 ```
 
-Recompilation with the added flags revealed these warnings:
+Recompilation with the added flags revealed the warnings listed in section [gcc warnings](#gcc-warnings). The more relevant ones are discussed below:
 
 #### Warning: Unused variables
 
@@ -74,7 +74,7 @@ In file included from /home/ernst/projects/ip-2025-gruppe-1/ip.c:1:
   104 |                                         .temperatures = {},
 ```
 
-The project defined ringbuffers for storing the most recent temperature measurements, however the entries in the ringbuffers were initialized
+The project defined ring-buffers for storing the most recent temperature measurements, however the entries in the ring-buffers were initialized
 with an empty initializer list, like below for `temperatures`:
 
 ```c
@@ -95,8 +95,11 @@ static device_t devices[MAX_DEVICES] =
                 /* ... */
         }
 ```
+This is not allowed in ISO C90, or in ISO C99. gcc allows this, probably clang as well. 
+The recommendation here is to replace the assignment by: `.temperatures = { 0 },` in the same manner as it was done for other fields of the same
+structure.
 
-A similar initialization code is also found in the ESP32 `read_temperature()` and `decrypt()` functions. In ESP32, however, we have a C++ file, and (assuming C++14 at least), empty initializers are allowed there; they initialize the array with zeros.
+A similar initialization code is also found in the ESP32 `read_temperature()` and `decrypt()` functions. In ESP32, however, we have a C++ file, and (assuming C++14 at least), **empty braced initializers are allowed in C++**; the following code is OK and initializes the array with zeros.
 
 ```cpp
 void read_temperature() {
@@ -117,11 +120,6 @@ td_int32_t decrypt(uint8_t *message, td_uint8_t *dest) {
     uint8_t plaintext[COMMAND_SIZE] = {};
 }
 ```
-
-
-This is not allowed in ISO C90, or in ISO C99. gcc allows this, probably clang as well. 
-The recommendation here is to replace the assignment by: `.temperatures = { 0 },` in the same manner as it was done for other fields of the same
-structure.
 
 #### Warning: comparison will always evaluate as ‘false’
 
@@ -229,17 +227,16 @@ void log_data(td_const_uint8_t* device_name, uint8_t status, uint32_t value) {
 If the curl command ever fails, it will likely cause a segfault.
 Recommendation: Turn on compiler warnings to detect these kinds of issues.
 
-We did not compile the ESP32 code.
+We did not compile the ESP32 code, as we did not get a compilable project. We, however, examined the file `ESP32-DHT11-vf2.ino` containing the logic which is executed in the ESP32 nodes.
 
 ### MISRA checks
 
-Running `cppcheck` on the sources did not show any findings regarding the mandatory MISRA rules, a few other rules were violated, 
-see the complete list of MISRA warnings issued by `cppcheck` below.
+Running `cppcheck` on the sources did not show any findings regarding the mandatory MISRA rules, a few other rule violations were detected, listed in section [misra warnings](#misra-warnings). We continued with manually checking the mandatory MISRA rules:
 
 #### Dir 2.1 All source files shall compile without any compilation errors
 
 In the original setting, the project compiles without errors using gcc. In an environment with compiler settings that enforce
-ISO C90 or ISO C99, a compilation error would have occurred due to the empty ininitalizer lists.
+ISO C90 or ISO C99, a compilation error would have occurred due to the empty initializer lists.
 
 #### Dir 3.1 All code shall be traceable to documented requirements 
 
@@ -267,86 +264,89 @@ SEC-01: ip-wolfcrypt.h Row 24 and ESP32-DHT11-vf2.ino Row 82
 SEC-02: ip-wolfcrypt.c Row 12    
 SEC-03: this requirement is not relevant for the code
 
-
-
 #### Dir 4.1 Run-time failures shall be minimized
 
-See the unneccesary check in p-bluetooth.c:12:25.
+The unnecessary check on `&devices[i]` against `NULL` was already discussed in the section above: "Warning: comparison will always evaluate as ‘false’"
 
-ip-bluetooth.c, function `disconnect_device()` not required to check for
-`NULL`ness, all calls pass a valid device structure. Moreover, the function can be made static.
+In `ip-bluetooth.c`, several functions are passed a pointer to `device_t`, and check the validity of that pointer, which in our
+humble opinion is not necessary since the function callers (partly in the used gattlib BLE framework) ensure the validity of the pointer:
 
 ```c
 void disconnect_device(device_t *device)
 {
+    /* not required */
     if (device == NULL) {
         printf("[DISCONNECT DEVICE] Device is NULL\n");
         return;
     }
 
-    if (device->connection == NULL) {
-        printf("[DISCONNECT DEVICE] No connection found for device with mac address %s\n", device->mac_address);
-        return;
-    }
-
-    if (gattlib_disconnect(device->connection, true) != GATTLIB_SUCCESS) {
-        printf("[DISCONNECT DEVICE] Connection could not be disconnected for device with mac address %s\n",
-               device->mac_address);
-    } 
+    /* ... */
 }
-```
-Checking `if (connection == NULL)` is not required, since `pthread_create()` for that function always passes a valid `device_t *`.
 
-```c
 void *bluetooth_connect_device(void *arg)
 {
     device_t *connection = (device_t *) arg;
-
+    /* not required */
     if (connection == NULL) {
         printf("[CONNECT DEVICE] Cannot read device\n");
         return NULL;
     }
     /* ... */
 }
-```
 
-same in `bluetooth_on_device_connected()`, also 
+uint32_t read_temperature(device_t *device)
+{
 
-```c
+    /* not required */
+    if (device == NULL) {
+        printf("[READ TEMP] Cannot read device\n");
+        return READ_TEMPERATURE_FAILED;
+    }
+    /* ... */
+}
+
+void *read_temperature_loop(void *arg)
+{
+    device_t *device = (device_t *) arg;
+
+    /* not required */
+    if (device == NULL) {
+        printf("[READ TEMP LOOP] Cannot read device\n");
+        return NULL;
+    }
+    /* ... */
+}
+
 bluetooth_on_device_connected(gattlib_adapter_t *adapter, td_const_uint8_t *dst, gattlib_connection_t *connection, td_int32_t error,
                               void *user_data)
 {
     /* ... */
 
     device_t *device = (device_t *) user_data;
+    /* not required */
     if (device == NULL) {
         printf("[ON DEVICE CONNECTED] Cannot read device\n");
         return;
     }
     /* ... */
 }
-```
 
-Same in `reconnect_thread()`
-
-```c
 void *reconnect_thread(void *arg)
 {
     device_t *device = (device_t *) arg;
+    /* not required */
     if (device == NULL) {
         printf("[RECONNECT] Cannot read device\n");
         return NULL;
     }
     /* ... */
 }
-```
 
-Same here
-```c
 void bluetooth_on_device_disconnected(gattlib_connection_t *connection, void *user_data)
 {
    /* ... */
 
+    /* not required */
     if (device == NULL) {
         printf("[DISCONNECT] Cannot read device\n");
         return;
@@ -356,24 +356,41 @@ void bluetooth_on_device_disconnected(gattlib_connection_t *connection, void *us
 }
 ```
 
-All `enqueue()`, `dequeue()` calls are invoked in the context one thread, i.e. there can't be race conditions accessing the queues the thread operates on. However, the validity of the `dequeue()` calls is checked twice:
+In `ip-bluetooth.c`, all `enqueue()`, `dequeue()` calls are invoked in the context one thread, i.e. there can't be race conditions accessing the queues the thread operates on. However, the validity of the `dequeue()` calls is checked twice:
 
-`dequeue(&device->next_five_temp_to_evaluate)` only returns `QUEUE_SIZE_INVALID` if `(device->next_five_temp_to_evaluate.size > 0)` does not hold. One of the two checks below can be removed. The block in the inner `if` statement is dead code:
+`dequeue(&device->next_five_temp_to_evaluate)` only returns `QUEUE_SIZE_INVALID` if `(device->next_five_temp_to_evaluate.size > 0)` does not hold. One of the two checks below can be removed.
 
 ```c
+/* In ip-fifo.c: */
+uint32_t dequeue(temperature_queue *queue)
+{
+    if (queue->size == 0) {
+        return QUEUE_SIZE_INVALID;
+    }
+    uint32_t val = queue->temperatures[queue->head];
+    queue->head = (queue->head + 1) % TEMPERATURE_VALIDATION_SIZE;
+    queue->size--;
+    return val;
+}
+
+/* In ip-bluetooth.c: */
+void *read_temperature_loop(void *arg)
+{
+    /* ... */
     if (device->next_five_temp_to_evaluate.size > 0) {
         nextValue = dequeue(&device->next_five_temp_to_evaluate);
+        /* not required */
         if (nextValue == QUEUE_SIZE_INVALID) {
-            /* this is dead code */
             printf("[READ TEMP LOOP] Failed to dequeue value for evaluation %u.\n", nextValue);
             continue;
         }
         skip_sleep = SKIP_SLEEP_YES;
     }
-
+    /* ... */
+}
 ```
 
-Both `enqueue()` and `enqueue_accepted_values()` always return `ENQUEUE_SUCCESS`, the error handling code in the client is dead code:
+In `ip-fifo.c`, both `enqueue()` and `enqueue_accepted_values()` always return `ENQUEUE_SUCCESS`, the error handling code in the client is not required (and there is also no need for `enqueue()`, or `enqueue_accepted_values()` to return a status value):
 
 ```c
 td_int32_t enqueue(temperature_queue *queue, uint32_t value)
@@ -404,17 +421,15 @@ void *read_temperature_loop(void *arg)
 {
     /* ... */
     td_int32_t ret = enqueue_accepted_values(&device->accepted_recent_five, nextValue);
+    /* not required */
     if (ret != ENQUEUE_SUCCESS) {
-        /* this is dead code */
         printf("[READ TEMP LOOP] Failed to accept value %u.\n", nextValue);
     }
     /* ... */
 }
-
 ```
 
-in `ESP32-DHT11-vf2.ino`, the decrypt function checks `dest`, which is not required, since the only caller provides a valid buffer. For `message`, a length of the buffer should be passed to ensure the decrypt function does not read off the boundaries.
-:
+in `ESP32-DHT11-vf2.ino`, the decrypt function checks `dest`, which is not required, since the only caller provides a valid buffer. For `message`, a length of the buffer should be passed to ensure the decrypt function does not read off the boundaries:
 
 ```cpp
 td_int32_t decrypt(uint8_t *message, td_uint8_t *dest) {
@@ -422,6 +437,7 @@ td_int32_t decrypt(uint8_t *message, td_uint8_t *dest) {
         Serial.println("[DECRYPT] Error: Message pointer is NULL");
         return DECRYPTION_FAILED;
     }
+    /* not required */
     if (dest == NULL) {
         Serial.println("[DECRYPT] Error: Destination pointer is NULL");
         return DECRYPTION_FAILED;
@@ -443,8 +459,6 @@ void read_temperature()
 }
 ```
 
-
-
 #### Dir 4.6 typedefs that indicate size and signedness should be used in place of the basic numerical types
 
 No basic numerical types were found, however in `ip-typedefs.h`, the project defined some types itself:
@@ -464,7 +478,7 @@ typedef int td_int32_t;
 Hence, the type name `td_uint8_t` is misleading.
 - For `int` is always signed, but may have 16, 32, or (in obscure/obsolete architectures) even 64 bit.
 
-Recommendation: use `uint8_t`, `int32_t` from `stddef.h`
+Recommendation: use `uint8_t`, `int32_t` from `stddef.h`. If libraries like wolfssl require `char` pointers to be passed, cast the buffer pointers to that type in the call to the function.
 
 
 #### Dir 4.7 If a function returns error information, then that error information shall be tested
@@ -479,14 +493,14 @@ For the following functions providing return values, calls were found where the 
 |`gpioPWM()`|OK, perhaps use macro which checks return value in debug mode|
 |`gpioSetMode()`|OK, perhaps use macro which checks return value in debug mode|
 |`gpioSetPWMfrequency()`|OK, perhaps use macro which checks return value in debug mode|
-|`printf()`|OK, perhaps explcitly cast calls as void|
-|`sprintf()`|OK, perhaps use macro which checks return value in debug mode|
+|`printf()`|OK, perhaps explicitly cast calls as void|
+|`sprintf()`|Check the return value to ensure you have a proper string in the buffer|
 |`pthread_cancel()`||
 |`pthread_cond_wait()`|Call likely not needed, see below|
 |`pthread_detach()`||
 |`pthread_mutex_lock()`|Call likely not needed, see below|
 |`pthread_mutex_unlock()`|Call likely not needed, see below|
-|`sleep()`|OK, perhaps explcitly cast calls as void|
+|`sleep()`|OK, perhaps explicitly cast calls as void|
 |`wc_AesInit()`|OK, only returns error on incorrect input parameters|
 
 #### Dir 4.10 Precautions shall be taken in order to prevent the contents of a header file being included more than once
@@ -494,9 +508,8 @@ OK
 
 #### Dir 4.11 The validity of values passed to library functions shall be checked
 
-In ip-bluetooth.c, the `reader_thread` is cancelled and detached, however the incorrect handle is checked upfront.
-`THREAD_UNINITIALIZED` is #defined as 0, which might be a valid thread handle. Suggest to either use a dedicated field
-to indicate a valid thread, or to use a datatype which is bigger than `pthread_t` and use a value which `pthread_t` can't hold as `THREAD_UNINITIALIZED`
+In ip-bluetooth.c, the `reader_thread` is canceled and detached, however the incorrect handle is checked upfront.
+Moreover, `THREAD_UNINITIALIZED` is #defined as 0, which might be a valid thread handle. Suggest to either use a dedicated field to indicate a valid thread, or to use a datatype which is bigger than `pthread_t` and use a value which `pthread_t` can't hold as `THREAD_UNINITIALIZED`
 
 ```c
 void handle_sigterm(td_int32_t sig)
@@ -528,7 +541,7 @@ void handle_sigterm(td_int32_t sig)
 }
 ```
 
-TimeOfCheck - TimeOfUse TOCTOU issue in `read_temperature_loop()`. Between validity check  `while (device->connection != NULL)` and its use in `read_temperature(device)`, `device->connection` may have been set to `NULL` in `bluetooth_on_device_disconnected()` which is executed by a concurrent thread.
+TimeOfCheck - TimeOfUse TOCTOU issue in `read_temperature_loop()`. Between validity check  `while (device->connection != NULL)` and its use in `read_temperature(device)`, `device->connection` may have been set to `NULL` in `bluetooth_on_device_disconnected()` which is executed by a concurrent thread. Moreover, the `device->connection` should be declared `volatile` to prevent the compiler from removing code accessing that fields value.
 
 ```c
 void *read_temperature_loop(void *arg)
@@ -564,7 +577,7 @@ void bluetooth_on_device_disconnected(gattlib_connection_t *connection, void *us
 }
 ```
 
-in `bluetooth_on_device_connected()`, if `connection == NULL`, it is passed to `bluetooth_on_device_disconnected()` as first parameter.
+In `bluetooth_on_device_connected()`, there is a logic bug in the error handling code. If `connection == NULL`, it is passed to `bluetooth_on_device_disconnected()` as first parameter.
 
 ```c
 void
@@ -591,13 +604,13 @@ OK
 ### Manual Checks:
 
 #### Recommend to use stderr
-All messages were written to stdout. Suggest to write error messages to stderr.
+All messages were written to `stdout`. Suggest to write info messages to `stdout`, and error messages to `stderr`.
 
 #### Lock statements without effect
 
-in `ip-bluetooth.c`, there are mutex lock/unlock operations which do not have an effect, as the lock variables are local to the function.
+in `ip-bluetooth.c`, there are mutex lock/unlock operations which do not have an effect, as the lock variables are local to the function (i.e. `pthread_mutex_lock()` below will never block).
 
-`pthread_cond_wait()` blocks the thread indefinitely. I assume that was done to prevent the application from terminating
+`pthread_cond_wait()`, however, blocks the thread indefinitely. We assume that was done to prevent the application from terminating. Probably, the `read_temperature_loop()` could be executed here.
 
 ```c
 void *bluetooth_scan_devices(void *args)
@@ -611,15 +624,15 @@ void *bluetooth_scan_devices(void *args)
     pthread_mutex_t m_connection_terminated_lock = PTHREAD_MUTEX_INITIALIZER;
     pthread_cond_t m_connection_terminated = PTHREAD_COND_INITIALIZER;
 
-    pthread_mutex_lock(&m_connection_terminated_lock);
-    pthread_cond_wait(&m_connection_terminated, &m_connection_terminated_lock);
-    pthread_mutex_unlock(&m_connection_terminated_lock);
+    pthread_mutex_lock(&m_connection_terminated_lock); /* will never block */
+    pthread_cond_wait(&m_connection_terminated, &m_connection_terminated_lock); /* blocks indefinitively */
+    pthread_mutex_unlock(&m_connection_terminated_lock); /* won't be reached */
 
     return NULL;
 }
 ```
 
-The locking/unlocking of the  mutexes has no effect, since the mutexes are created locally on the stack.
+The locking/unlocking of the mutexes has no effect here as well, since the mutexes are created locally on the stack.
 
 ```c
 void bluetooth_on_device_disconnected(gattlib_connection_t *connection, void *user_data)
@@ -629,7 +642,7 @@ void bluetooth_on_device_disconnected(gattlib_connection_t *connection, void *us
     pthread_mutex_t device_connection_lock = PTHREAD_MUTEX_INITIALIZER;
 
     printf("[DISCONNECT] Device got disconnected...\n");
-    pthread_mutex_lock(&device_connection_lock);
+    pthread_mutex_lock(&device_connection_lock); /* will never block */
     /* ... critical section here? ... */
     pthread_mutex_unlock(&device_connection_lock);
 
@@ -639,7 +652,7 @@ void bluetooth_on_device_disconnected(gattlib_connection_t *connection, void *us
 
 #### Potential resource/memory leaks
 
-in ip-wolfcrypt.c, `encrypt()` may cause resource leaks, as `wc_AesInit()` and `wc_InitRng()` *may* allocate resources which must be freed with `wc_AesFree()` and `wc_FreeRng()`. The error handling blocks, however, immediately return without that, which may cause resource/memory leaks.
+in ip-wolfcrypt.c, `encrypt()` may cause resource leaks, as `wc_AesInit()` and `wc_InitRng()` *may* allocate resources which must be freed with `wc_AesFree()` and `wc_FreeRng()`. The error handling blocks, however, immediately return without calling the free functions, which may cause resource/memory leaks.
 
 ```c
 td_int32_t encrypt(int8_t *dest)
@@ -687,70 +700,45 @@ td_int32_t encrypt(int8_t *dest)
 }
 ```
 
-### Recommendations minor issues
+#### Missing reset of handle variable?
+
+By sending the `SIGUSR1` and/or `SIGUSR2` to the running process, the bluetooth connection to the operators 1 and/or 2 can be reset, and new bluetooth connections will be set up again. In the context of resetting the connection, `bluetooth_on_device_disconnected()` is called, canceling the `reader_thread`, which processes the incoming temperature values from the respective operator. However, the field holding the thread handle is not reset, which prevents a recreation of the `reader_thread` in `bluetooth_on_device_connected()` when the new connection is set up, and no temperature values will be processed from the respective operator again:
 
 ```c
-uint32_t read_temperature(device_t *device)
+void bluetooth_on_device_disconnected(gattlib_connection_t *connection, void *user_data)
 {
+    /* ... */
+    if (device->reader_thread != THREAD_UNINITIALIZED) {
+        pthread_cancel(device->reader_thread);
+        pthread_detach(device->reader_thread);
+        /* device->reader_thread = THREAD_UNINITIALIZED; // missing? */
+    }
+    /* ... */
+}
 
-    if (device == NULL) {
-        printf("[READ TEMP] Cannot read device\n");
-        return READ_TEMPERATURE_FAILED;
+/* ... */
+void
+bluetooth_on_device_connected(gattlib_adapter_t *adapter, td_const_uint8_t *dst, gattlib_connection_t *connection, td_int32_t error, void *user_data)
+{
+    /* ... */
+    /* since the thread handle of the cancelled thread is still in device->reader_thread, the
+       error message is printed, and no new `reader_thread` is created */
+    if(device->reader_thread != THREAD_UNINITIALIZED) {
+        printf("[ON DEVICE CONNECTED] Cannot create reader thread.\n");
+        return;
     }
 
-    size_t len;
-    uint8_t *buffer = NULL;
-
-    uint32_t ret = gattlib_read_char_by_uuid(device->connection, &device->temperature_uuid, (void **) &buffer, &len);
-    if (ret != GATTLIB_SUCCESS || buffer == NULL) {
-        printf("[READ TEMP] Failed reading from: %s - error code: %d'\n", device->mac_address, ret);
-        return READ_TEMPERATURE_FAILED;
+    if (pthread_create(&device->reader_thread, NULL, read_temperature_loop, device) != 0) {
+        printf("[ON DEVICE CONNECTED] Failed to create reader thread.\n");
+        return;
     }
-
-    uint32_t value = 0;
-
-    for (uintptr_t i = 0; i < len; i++) {
-        value |= ((uint32_t) buffer[i]) << (8 * i);
-    }
-
-    gattlib_characteristic_free_value(buffer);
-
-    return value;
 }
 ```
 
-Would it make sense to ensure you received four bytes here?
-Istead of the loop, you can extract the value as follows:
+### gcc warnings
 
-uint32_t value = buffer[0] + (buffer[1] << 8) + (buffer[2] << 16) + (buffer[3] << 24)
-That code will likely be faster
+The following warning messages were obtained using gcc 12.2 with the options `-Wall -Wextra -Wpedantic` turned on.
 
-
-### FIXMEs Debugging
-
-- Check in the debugger what happens in bluetooth_scan_devices() in `pthread_cond_wait()`. Does the debugger stop here unconditionally?
-- What happens if the read_temperature_loop() executes and the BT connection terminates? How to Debug: 
-    - Set breakpoint in bluetooth_on_device_disconnected(), line 642 "device->connection = NULL;"
-    - Set breakpoint in read_temperature_loop(), line 461 "nextValue = read_temperature(device);"
-    - start the program
-    - When the read_temperature_loop() breakpoint is hit, turn off bluetooth connection, wait for the disconnected breakpoint to hit
-    - step over the NULL assigndment
-    - continue with the read_temperature_loop(), should cause a segfault/Null Pointer Exception
-
-- Is there a possibility that the reader thread is not executing at all? How to Debug:
-    - set a breakpoint in `bluetooth_on_device_disconnected()`, line 649, which cancels the reader thread
-    - start the program
-    - wait for the "[READ TEMP LOOP] ..." messages to appear
-    - get the process id: `ps -gaux | grep id`
-    - send SIGUSR1, SIGUSR2 signals to our process: kill -s SIGUSR1 <pid> und kill -s SIGUSR2 <pid>
-    - do we hit the breakpoint? If so, continue
-    - do we see any "[READ TEMP LOOP] ..." messages? If not verify by setting a breakpoint in read_temperature_loop()
-
-- Check screenshots Lorenzo
-- Check with Lorenzo & Stefan: The reset command does not enclose a counter to prevent replay attacks. IMHO an attacker can record a RESET command, then replay it w/o having to know the key...
-Does encryption make sense here? There is only one command sent from the controller to the operator devices...
-
-### gcc warnings:
 ```
 In file included from /home/ernst/projects/ip-2025-gruppe-1/ip.c:1:
 /home/ernst/projects/ip-2025-gruppe-1/ip-bluetooth.h:104:57: warning: ISO C forbids empty initializer braces [-Wpedantic]
@@ -870,7 +858,26 @@ In file included from /home/ernst/projects/ip-2025-gruppe-1/ip-wolfcrypt.h:8:
 ```
 
 
-### MISRA checker warnings:
+### misra warnings
+
+The following MISRA warnings were obtained using Cppcheck 2.13.0, and the following `checkMISRA.sh` script:
+
+```bash
+#!/bin/bash
+CPPCHECK=cppcheck
+# building cppcheck from github does not increase findings.
+#CPPCHECK=${HOME}/projects/cppcheck/build/bin/cppcheck
+CPPCHECKOPTS="--cppcheck-build-dir=cppcheck-build --addon=misra --enable=all --inconclusive --safety --platform=unix64 --checkers-report=report.txt --suppress=misra-config --suppress=missingIncludeSystem"
+INC_PATH_ARGS="-I."
+CPPCHECKFILES="ip-bluetooth.c ip-buzzer.c ip-fifo.c ip-telegraf.c ip-wolfcrypt.c ip.c"
+
+mkdir -p cppcheck-build
+
+#
+# Runs cppcheck including MISRA rules
+#
+${CPPCHECK} --language=c --std=c99 ${CPPCHECKOPTS} ${INC_PATH_ARGS} ${CPPCHECKFILES} ${HDRCHECKFILES}
+```
 
 ```
 ernst@StudiNotebook:~/projects/InterDisziplinaeresProjekt/ip-2025-gruppe-1$ ./checkMISRA.sh 
