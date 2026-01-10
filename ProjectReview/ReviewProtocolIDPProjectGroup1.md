@@ -1,6 +1,13 @@
-# Review ip-2025-gruppe-1
+# Review of project "ip-2025-gruppe-1"
+
+Done by Students of Group2:
+- Lorenzo Haidinger
+- Stefan Ohnewith
+- Ernst Schwaiger
 
 ## Build Process
+
+Repeating the build process of the project according to the provided documentation.
 
 ### Gattlib dependency to libpcre
 
